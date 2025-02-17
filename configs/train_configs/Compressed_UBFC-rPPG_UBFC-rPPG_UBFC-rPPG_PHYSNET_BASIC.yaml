@@ -67,11 +67,11 @@ VALID:
 TEST:
   OUTPUT_SAVE_DIR: "/content/drive/MyDrive/DATASETS/DATSET_50_1_output"
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
-  USE_LAST_EPOCH: True                     # to use provided validation dataset to find the best epoch, should be false
+  USE_LAST_EPOCH: False                    # to use provided validation dataset to find the best epoch, should be false
   DATA:
     FS: 30
     DATASET: UBFC-rPPG
-    DO_PREPROCESS: False                    # if first time, should be true
+    DO_PREPROCESS: True                   # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_test"                     # Raw dataset path, need to be updated
     CACHED_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_test_preprocess"    # Processed dataset save path, need to be updated
