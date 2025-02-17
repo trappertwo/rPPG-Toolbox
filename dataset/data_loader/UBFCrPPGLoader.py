@@ -68,12 +68,15 @@ class UBFCrPPGLoader(BaseLoader):
         """ invoked by preprocess_dataset for multi_process."""
         filename = os.path.split(data_dirs[i]['path'])[-1]
         saved_filename = data_dirs[i]['index']
-
+        
         # Read Frames
         if 'None' in config_preprocess.DATA_AUG:
             # Utilize dataset-specific function to read video
-            frames = self.read_video(
-                os.path.join(data_dirs[i]['path'],"vid.avi"))
+            if os.path.isfile(os.path.join(data_dirs[i]['path'],"vid.avi")):
+              frames = self.read_video(os.path.join(data_dirs[i]['path'],"vid.avi"))
+            else:
+              frames = self.read_video(
+                os.path.join(data_dirs[i]['path'],"vid.mp4"))
         elif 'Motion' in config_preprocess.DATA_AUG:
             # Utilize general function to read video in .npy format
             frames = self.read_npy_video(
