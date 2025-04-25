@@ -1,6 +1,7 @@
 ## Note: This is a fork from ubicomp/rPPG-Toolbox repository, with some changes for compressed videos. To get an overview of rPPG-Toolbox, please see <a href="https://github.com/ubicomplab/rPPG-Toolbox/">the original README file</a>.
 
----------------------------------------------------------------
+Below is the original README.
+-----------------------------------------------------------------------
 
 <p align="center">
 :fire: Please remember to :star: this repo if you find it useful and cite our work if you end up using it in your work! :fire:
