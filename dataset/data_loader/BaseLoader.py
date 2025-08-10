@@ -23,7 +23,7 @@ import pandas as pd
 from torch.utils.data import Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
-
+from models.network_swinir import SwinIR as net
 
 class BaseLoader(Dataset):
     """The base class for data loading based on pytorch Dataset.
