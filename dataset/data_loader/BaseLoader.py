@@ -210,6 +210,28 @@ class BaseLoader(Dataset):
         self.load_preprocessed_data()  # load all data and corresponding labels (sorted for consistency)
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
+    
+    def load_model(model_path):
+        """Loads the pretrained SwinIR model
+
+        Args:
+        model_path: path of the pretrained model
+        """
+        # set up model
+        if os.path.exists(model_path):
+            print(f'loading model from {model_path}')
+        else:
+            raise ValueError(f'model {model_path} does not exist.')
+        
+        model = net(upscale=1, in_chans=3, img_size=126, window_size=7,
+                    img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='', resi_connection='1conv')
+        param_key_g = 'params'
+        
+        pretrained_model = torch.load(model_path)
+        model.load_state_dict(pretrained_model[param_key_g] if param_key_g in pretrained_model.keys() else pretrained_model, strict=True)
+        return model
+        
     def preprocess(self, frames, bvps, config_preprocess):
         """Preprocesses a pair of data.
 
@@ -221,6 +243,10 @@ class BaseLoader(Dataset):
             frame_clips(np.array): processed video data by frames
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
+        restoration_model = None
+        if config_preprocess.RESTORE.DO_RESTORE:
+            restoration_model = load_model(config_preprocess.RESTORE.MODEL_PATH)
+            
         # resize frames and crop for face region
         frames = self.crop_face_resize(
             frames,
@@ -234,7 +260,7 @@ class BaseLoader(Dataset):
             config_preprocess.RESIZE.W,
             config_preprocess.RESIZE.H,
             config_preprocess.RESTORE.DO_RESTORE,
-            swin_ir_model=None)
+            model=restoration_model)
         # Check data transformation type
         data = list()  # Video data
         for data_type in config_preprocess.DATA_TYPE:
@@ -406,7 +432,7 @@ class BaseLoader(Dataset):
         return output
 
     def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
-                         detection_freq, use_median_box, width, height, restore=False, swin_ir_model=None):
+                         detection_freq, use_median_box, width, height, restore=False, model=None):
         """Crop face and resize frames.
 
         Args:
