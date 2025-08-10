@@ -232,7 +232,9 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.DYNAMIC_DETECTION_FREQUENCY,
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
-            config_preprocess.RESIZE.H)
+            config_preprocess.RESIZE.H,
+            config_preprocess.RESTORE.DO_RESTORE,
+            swin_ir_model=None)
         # Check data transformation type
         data = list()  # Video data
         for data_type in config_preprocess.DATA_TYPE:
@@ -343,8 +345,68 @@ class BaseLoader(Dataset):
             face_box_coor[3] = larger_box_coef * face_box_coor[3]
         return face_box_coor
 
+    def swinir_model_inference(img_lq, model, window_size, scale, tile=None, tile_overlap=0):
+        if tile is None:
+            # test the image as a whole
+            output = model(img_lq)
+        else:
+            # test the image tile by tile
+            b, c, h, w = img_lq.size()
+            tile = min(tile, h, w)
+            assert tile % window_size == 0, "tile size should be a multiple of window_size"
+            sf = scale
+            
+            stride = tile - tile_overlap
+            h_idx_list = list(range(0, h-tile, stride)) + [h-tile]
+            w_idx_list = list(range(0, w-tile, stride)) + [w-tile]
+            E = torch.zeros(b, c, h*sf, w*sf).type_as(img_lq)
+            W = torch.zeros_like(E)
+            
+            for h_idx in h_idx_list:
+                for w_idx in w_idx_list:
+                    in_patch = img_lq[..., h_idx:h_idx+tile, w_idx:w_idx+tile]
+                    out_patch = model(in_patch)
+                    out_patch_mask = torch.ones_like(out_patch)
+
+                    E[..., h_idx*sf:(h_idx+tile)*sf, w_idx*sf:(w_idx+tile)*sf].add_(out_patch)
+                    W[..., h_idx*sf:(h_idx+tile)*sf, w_idx*sf:(w_idx+tile)*sf].add_(out_patch_mask)
+            output = E.div_(W)        
+        return output
+
+    def img_restore_swinir(img_lq, model, window_size=7, scale=40):
+        """Restore low quality image by remove compresssion artifacts using SwinIR pretrained model.
+        
+        Args:
+        img_lq: the low quality image
+        model: the pretrained SwinIR model
+        """
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        img_lq = img_lq.astype(np.float32)/ 255
+        img_lq = np.transpose(img_lq if img_lq.shape[2] == 1 else img_lq[:, :, [2, 1, 0]], (2, 0, 1))  # HCW-BGR to CHW-RGB
+        img_lq = torch.from_numpy(img_lq).float().unsqueeze(0).to(device)  # CHW-RGB to NCHW-RGB
+        
+        # inference
+        with torch.no_grad():
+            # pad input image to be a multiple of window_size
+            _, _, h_old, w_old = img_lq.size()
+            h_pad = (h_old // window_size + 1) * window_size - h_old
+            w_pad = (w_old // window_size + 1) * window_size - w_old
+            img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
+            img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
+            output = swinir_model_inference(img_lq, model, window_size, scale)
+            output = output[..., :h_old * scale, :w_old * scale]
+
+            # save image
+            output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+            if output.ndim == 3:
+                output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))  # CHW-RGB to HCW-BGR
+                output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
+                #cv2.imwrite(f'{save_dir}/{imgname}_SwinIR.png', output)
+        return output
+
     def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
-                         detection_freq, use_median_box, width, height):
+                         detection_freq, use_median_box, width, height, restore=False, swin_ir_model=None):
         """Crop face and resize frames.
 
         Args:
@@ -394,7 +456,16 @@ class BaseLoader(Dataset):
                     face_region = face_region_all[reference_index]
                 frame = frame[max(face_region[1], 0):min(face_region[1] + face_region[3], frame.shape[0]),
                         max(face_region[0], 0):min(face_region[0] + face_region[2], frame.shape[1])]
-            resized_frames[i] = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+            
+            # Resize the frame
+            resized_frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+            
+            if restore:
+                resized_frame = img_restore_swinir(resized_frame, model)
+                if i % 1000 == 0:
+                    print("Restored 1000 frames")
+            
+            resized_frames.append(resized_frame)
         return resized_frames
 
     def chunk(self, frames, bvps, chunk_length):
