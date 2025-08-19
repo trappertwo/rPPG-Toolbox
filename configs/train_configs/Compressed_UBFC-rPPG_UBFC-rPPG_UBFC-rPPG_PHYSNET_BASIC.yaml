@@ -1,7 +1,7 @@
 BASE: ['']
 TOOLBOX_MODE: "train_and_test" # "train_and_test"  or "only_test"
 TRAIN:
-  BATCH_SIZE: 4
+  BATCH_SIZE: 2
   EPOCHS: 30
   LR: 9e-3
   MODEL_FILE_NAME: UBFC_UBFC_UBFC_physnet_stan
@@ -11,9 +11,9 @@ TRAIN:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: True            # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train_preprocess"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train_preprocess/DataFileLists1/" 
+    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train_preprocess"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train_preprocess/DataFileLists1/" 
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 0.8
@@ -44,9 +44,9 @@ VALID:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: True               # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train"                      # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train_preprocess"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_train_preprocess/DataFileLists2/"    # Path to store file lists, needs to be updated
+    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train"                      # Raw dataset path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train_preprocess"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_train_preprocess/DataFileLists2/"    # Path to store file lists, needs to be updated
     EXP_DATA_NAME: ""
     BEGIN: 0.8
     END: 1.0
@@ -72,7 +72,7 @@ VALID:
         H: 72
         W: 72
 TEST:
-  OUTPUT_SAVE_DIR: "/content/drive/MyDrive/DATASETS/DATSET_50_1_output"
+  OUTPUT_SAVE_DIR: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_output"
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
   USE_LAST_EPOCH: False                    # to use provided validation dataset to find the best epoch, should be false
   DATA:
@@ -80,8 +80,8 @@ TEST:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: True                   # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_test"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/DATASETS/DATASET_50_1_test_preprocess"    # Processed dataset save path, need to be updated
+    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_test"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_test_preprocess"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
@@ -115,11 +115,12 @@ MODEL:
   PHYSNET:
     FRAME_NUM: 128
 INFERENCE:
-  BATCH_SIZE: 4
+  BATCH_SIZE: 2
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 10        # In seconds
   MODEL_PATH: ""
+
 
 
