@@ -236,7 +236,7 @@ class BaseLoader(Dataset):
         print("Loaded SwinIR model...")
         return model
         
-    def preprocess(self, frames, bvps, config_preprocess):
+    def preprocess(self, frames, bvps, config_preprocess, restoration_model):
         """Preprocesses a pair of data.
 
         Args:
@@ -247,11 +247,6 @@ class BaseLoader(Dataset):
             frame_clips(np.array): processed video data by frames
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
-
-        #### Added for SwinIR
-        restoration_model = None
-        if config_preprocess.RESTORE.DO_RESTORE:
-            restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             
         # resize frames and crop for face region
         frames = self.crop_face_resize(
