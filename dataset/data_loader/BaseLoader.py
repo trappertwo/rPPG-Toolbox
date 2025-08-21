@@ -24,6 +24,8 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
 import torch
+
+#### Added for SwinIR
 from models.network_swinir import SwinIR as net
 
 class BaseLoader(Dataset):
@@ -211,7 +213,7 @@ class BaseLoader(Dataset):
         self.load_preprocessed_data()  # load all data and corresponding labels (sorted for consistency)
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
-    
+    #### Added for SwinIR
     def load_model(model_path):
         """Loads the pretrained SwinIR model
 
@@ -231,6 +233,7 @@ class BaseLoader(Dataset):
         
         pretrained_model = torch.load(model_path)
         model.load_state_dict(pretrained_model[param_key_g] if param_key_g in pretrained_model.keys() else pretrained_model, strict=True)
+        print("Loaded SwinIR model...")
         return model
         
     def preprocess(self, frames, bvps, config_preprocess):
@@ -244,6 +247,8 @@ class BaseLoader(Dataset):
             frame_clips(np.array): processed video data by frames
             bvps_clips(np.array): processed bvp (ppg) labels by frames
         """
+
+        #### Added for SwinIR
         restoration_model = None
         if config_preprocess.RESTORE.DO_RESTORE:
             restoration_model = load_model(config_preprocess.RESTORE.MODEL_PATH)
@@ -372,6 +377,7 @@ class BaseLoader(Dataset):
             face_box_coor[3] = larger_box_coef * face_box_coor[3]
         return face_box_coor
 
+    #### Added for SwinIR restotation
     def swinir_model_inference(img_lq, model, window_size, scale, tile=None, tile_overlap=0):
         if tile is None:
             # test the image as a whole
@@ -400,6 +406,7 @@ class BaseLoader(Dataset):
             output = E.div_(W)        
         return output
 
+    #### Added for SwinIR restotation
     def img_restore_swinir(img_lq, model, window_size=7, scale=40):
         """Restore low quality image by remove compresssion artifacts using SwinIR pretrained model.
         
@@ -448,6 +455,8 @@ class BaseLoader(Dataset):
             use_face_detection(bool):  Whether crop the face.
             larger_box_coef(float): the coefficient of the larger region(height and weight),
                                 the middle point of the detected region will stay still during the process of enlarging.
+            restore(bool): Whether to restore image using SwinIR compression artifact reduction model
+            model(Model): SwinIR model
         Returns:
             resized_frames(list[np.array(float)]): Resized and cropped frames
         """
@@ -486,11 +495,12 @@ class BaseLoader(Dataset):
             
             # Resize the frame
             resized_frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
-            
+
+            #### Added for SwinIR restoration
             if restore:
                 resized_frame = img_restore_swinir(resized_frame, model)
-                if i % 1000 == 0:
-                    print("Restored 1000 frames")
+                if i % 100 == 0:
+                    print("Restored 100 frames")
             
             resized_frames.append(resized_frame)
         return resized_frames
