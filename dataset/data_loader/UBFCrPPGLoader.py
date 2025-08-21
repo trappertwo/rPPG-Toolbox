@@ -90,8 +90,13 @@ class UBFCrPPGLoader(BaseLoader):
         else:
             bvps = self.read_wave(
                 os.path.join(data_dirs[i]['path'],"ground_truth.txt"))
+
+        #### Added for SwinIR
+        restoration_model = None
+        if config_preprocess.RESTORE.DO_RESTORE:
+            restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             
-        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess)
+        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, model)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
