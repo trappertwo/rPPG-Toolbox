@@ -70,6 +70,7 @@ class UBFCrPPGLoader(BaseLoader):
         saved_filename = data_dirs[i]['index']
         
         # Read Frames
+        #### This was changed to handle compressed videos (.mp4)
         if 'None' in config_preprocess.DATA_AUG:
             # Utilize dataset-specific function to read video
             if os.path.isfile(os.path.join(data_dirs[i]['path'],"vid.avi")):
@@ -96,7 +97,7 @@ class UBFCrPPGLoader(BaseLoader):
         if config_preprocess.RESTORE.DO_RESTORE:
             restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             
-        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, model)
+        frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, restoration_model)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
         file_list_dict[i] = input_name_list
 
