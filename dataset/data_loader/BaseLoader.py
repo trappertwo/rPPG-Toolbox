@@ -214,7 +214,7 @@ class BaseLoader(Dataset):
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
     #### Added for SwinIR
-    def load_swinir_model(model_path):
+    def load_swinir_model(self, model_path):
         """Loads the pretrained SwinIR model
 
         Args:
@@ -251,7 +251,7 @@ class BaseLoader(Dataset):
         #### Added for SwinIR
         restoration_model = None
         if config_preprocess.RESTORE.DO_RESTORE:
-            restoration_model = load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
+            restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             
         # resize frames and crop for face region
         frames = self.crop_face_resize(
@@ -378,7 +378,7 @@ class BaseLoader(Dataset):
         return face_box_coor
 
     #### Added for SwinIR restotation
-    def swinir_model_inference(img_lq, model, window_size, scale, tile=None, tile_overlap=0):
+    def swinir_model_inference(self, img_lq, model, window_size, scale, tile=None, tile_overlap=0):
         if tile is None:
             # test the image as a whole
             output = model(img_lq)
@@ -407,7 +407,7 @@ class BaseLoader(Dataset):
         return output
 
     #### Added for SwinIR restotation
-    def img_restore_swinir(img_lq, model, window_size=7, scale=40):
+    def img_restore_swinir(self, img_lq, model, window_size=7, scale=40):
         """Restore low quality image by remove compresssion artifacts using SwinIR pretrained model.
         
         Args:
@@ -428,7 +428,7 @@ class BaseLoader(Dataset):
             w_pad = (w_old // window_size + 1) * window_size - w_old
             img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
             img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
-            output = swinir_model_inference(img_lq, model, window_size, scale)
+            output = self.swinir_model_inference(img_lq, model, window_size, scale)
             output = output[..., :h_old * scale, :w_old * scale]
 
             # save image
@@ -498,7 +498,7 @@ class BaseLoader(Dataset):
 
             #### Added for SwinIR restoration
             if restore:
-                resized_frame = img_restore_swinir(resized_frame, model)
+                resized_frame = self.img_restore_swinir(resized_frame, model)
                 if i % 100 == 0:
                     print("Restored 100 frames")
             
