@@ -497,7 +497,7 @@ class BaseLoader(Dataset):
                 if i % 100 == 0:
                     print("Restored 100 frames")
             
-            resized_frames.append(resized_frame)
+            resized_frames[i] = resized_frame
         return resized_frames
 
     def chunk(self, frames, bvps, chunk_length):
