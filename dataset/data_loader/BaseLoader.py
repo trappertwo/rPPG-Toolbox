@@ -214,7 +214,7 @@ class BaseLoader(Dataset):
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
     #### Added for SwinIR
-    def load_model(model_path):
+    def load_swinir_model(model_path):
         """Loads the pretrained SwinIR model
 
         Args:
@@ -251,7 +251,7 @@ class BaseLoader(Dataset):
         #### Added for SwinIR
         restoration_model = None
         if config_preprocess.RESTORE.DO_RESTORE:
-            restoration_model = load_model(config_preprocess.RESTORE.MODEL_PATH)
+            restoration_model = load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             
         # resize frames and crop for face region
         frames = self.crop_face_resize(
