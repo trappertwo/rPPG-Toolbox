@@ -34,7 +34,7 @@ TRAIN:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: True
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg10.pth"        
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"        
       RESIZE:
         H: 72
         W: 72
@@ -67,7 +67,7 @@ VALID:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: True
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg10.pth"        
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"        
       RESIZE:
         H: 72
         W: 72
@@ -101,7 +101,7 @@ TEST:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: True
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg10.pth"        
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"        
       RESIZE:
         H: 72
         W: 72
@@ -121,6 +121,7 @@ INFERENCE:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 10        # In seconds
   MODEL_PATH: ""
+
 
 
 
