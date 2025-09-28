@@ -99,7 +99,7 @@ class UBFCrPPGLoader(BaseLoader):
             restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        model.to(device)
+        restoration_model.to(device)
             
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, restoration_model)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
