@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 from dataset.data_loader.BaseLoader import BaseLoader
 from tqdm import tqdm
+import torch
 
 
 class UBFCrPPGLoader(BaseLoader):
