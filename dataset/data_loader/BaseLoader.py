@@ -494,8 +494,8 @@ class BaseLoader(Dataset):
             #### Added for SwinIR restoration
             if restore:
                 resized_frame = self.img_restore_swinir(resized_frame, model)
-                if i % 100 == 0:
-                    print("Restored 100 frames")
+                if i % 1000 == 0:
+                    print("Restored 1000 frames")
 
             # resize again since SwinIR changes 72X72 to 77X77 (multiple of 7)
             resized_frames[i] = cv2.resize(resized_frame, (width, height), interpolation=cv2.INTER_AREA)
