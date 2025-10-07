@@ -93,13 +93,12 @@ class UBFCrPPGLoader(BaseLoader):
             bvps = self.read_wave(
                 os.path.join(data_dirs[i]['path'],"ground_truth.txt"))
 
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #### Added for SwinIR
         restoration_model = None
         if config_preprocess.RESTORE.DO_RESTORE:
             restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
-
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        restoration_model.to(device)
+            restoration_model.to(device)
             
         frames_clips, bvps_clips = self.preprocess(frames, bvps, config_preprocess, restoration_model)
         input_name_list, label_name_list = self.save_multi_process(frames_clips, bvps_clips, saved_filename)
