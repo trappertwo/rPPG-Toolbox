@@ -8,9 +8,9 @@ TEST:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: True                  # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_test"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_test"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_150_1_test_preprocess/DataFileLists1/" 
+    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train_preprocess/DataFileLists1/" 
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
@@ -34,7 +34,7 @@ TEST:
 DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
-  PATH: /content/drive/MyDrive/research_project/runs/exp/150_1
+  PATH: /content/drive/MyDrive/research_project/runs/exp/200_1
 MODEL:
   DROP_RATE: 0.2
   NAME: Physnet
