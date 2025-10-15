@@ -13,6 +13,41 @@ from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
 from torch.utils.data import DataLoader, Dataset
 
 
+from models.network_swinir import SwinIR as net
+from torch.utils.data import TensorDataset
+from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
+
+
+def load_swinir_model(model_path, window_size=7, img_size=126):
+    """Loads the pretrained SwinIR model"""
+    
+    # set up model
+    if os.path.exists(model_path):
+        print(f'loading model from {model_path}')
+    else:
+        raise ValueError(f'model {model_path} does not exist.')
+    model = net(upscale=1, in_chans=3, img_size=img_size, window_size=window_size,
+                img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+                mlp_ratio=2, upsampler='', resi_connection='1conv')
+    param_key_g = 'params'
+    pretrained_model = torch.load(model_path)
+    model.load_state_dict(pretrained_model[param_key_g] if param_key_g in pretrained_model.keys() else pretrained_model, strict=True)
+
+    return model
+
+
+def load_physnet_model(model_path, num_frames):
+    """Loads a pretrained PhysNet model"""
+    if os.path.exists(model_path):
+        print(f'loading model from {model_path}')
+    else:
+        raise ValueError(f'model {model_path} does not exist.')
+    model = PhysNet_padding_Encoder_Decoder_MAX(frames=num_frames)
+    model.load_state_dict(torch.load(model_path))
+    print("Testing uses Physnet pretrained model!")
+    return model
+
+
 def diff_normalize_data(data):
     """Calculate discrete difference in video data along the time-axis and normalize by its standard deviation."""
   
