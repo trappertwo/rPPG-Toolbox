@@ -9,6 +9,7 @@ github repo: https://github.com/JingyunLiang/SwinIR
 import torch
 import torch.nn as nn
 import os
+import numpy as np
 
 from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
 from torch.utils.data import DataLoader, Dataset
@@ -67,25 +68,25 @@ class ImageDataSet(Dataset):
     """Dataset for SwinIR model"""
     
     def __init__(self, frames, window_size = 7):
-      self.frames = frames
-      self.window_size = window_size
+        self.frames = frames
+        self.window_size = window_size
 
     def __len__(self):
-      return len(self.frames)
+        return len(self.frames)
 
     def __getitem__(self, idx):
-      frame = self.frames[idx]
-      frame = frame.astype(np.float32)/ 255
-      frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
-      device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-      frame = torch.from_numpy(frame).float().to(device)
-      # pad input image to be a multiple of window_size
-      _, h_old, w_old = frame.size()
-      h_pad = (h_old // self.window_size + 1) * self.window_size - h_old
-      w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
-      frame = torch.cat([frame, torch.flip(frame, [1])], 1)[:, :h_old + h_pad, :]
-      frame = torch.cat([frame, torch.flip(frame, [2])], 2)[:, :, :w_old + w_pad]
-      return frame
+        frame = self.frames[idx]
+        frame = frame.astype(np.float32)/ 255
+        frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        frame = torch.from_numpy(frame).float().to(device)
+        # pad input image to be a multiple of window_size
+        _, h_old, w_old = frame.size()
+        h_pad = (h_old // self.window_size + 1) * self.window_size - h_old
+        w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
+        frame = torch.cat([frame, torch.flip(frame, [1])], 1)[:, :h_old + h_pad, :]
+        frame = torch.cat([frame, torch.flip(frame, [2])], 2)[:, :, :w_old + w_pad]
+        return frame
 
 
 class SwinIR(nn.Module):
@@ -102,27 +103,26 @@ class SwinIR(nn.Module):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
 
-  def forward(self, frames):
-      height, width, channel = frames[0].shape
-      #print(frames.shape)
-      image_ds = ImageDataSet(frames, self.window_size)
-      image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
+    def forward(self, frames):
+        height, width, channel = frames[0].shape
+        #print(frames.shape)
+        image_ds = ImageDataSet(frames, self.window_size)
+        image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
       
-      restored_frames = []
-      for batch in image_dl:
-          restored = self.swinir_model(batch)
-          for i in range(restored.shape[0]):
-            output = restored[i]
-            output = output[..., :height, :width]
-            output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-            if output.ndim == 3:
-                output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
-                output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
-                restored_frames.append(output)
-      
-      print("Restored batch")
-      #media.show_image(output)
-      return np.array(restored_frames)
+        restored_frames = []
+        for batch in image_dl:
+            restored = self.swinir_model(batch)
+            for i in range(restored.shape[0]):
+                output = restored[i]
+                output = output[..., :height, :width]
+                output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+                if output.ndim == 3:
+                    output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
+                    output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
+                    restored_frames.append(output)
+            print("Restored batch")
+            #media.show_image(output)
+        return np.array(restored_frames)
 
 
 class SwinPhys(nn.Module):
