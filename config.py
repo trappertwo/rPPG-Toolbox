@@ -314,7 +314,7 @@ _C.MODEL.MODEL_DIR = 'PreTrainedModels'
 # Specific parameters for physnet parameters
 _C.MODEL.PHYSNET = CN()
 _C.MODEL.PHYSNET.FRAME_NUM = 64
-_C.MODEL.PHYSNET.RESTORE = False
+_C.MODEL.PHYSNET.DO_RESTORE = False
 _C.MODEL.PHYSNET.SWINIR_MODEL_PATH = ''
 
 # -----------------------------------------------------------------------------
