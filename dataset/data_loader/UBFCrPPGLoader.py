@@ -96,7 +96,7 @@ class UBFCrPPGLoader(BaseLoader):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         #### Added for SwinIR
         restoration_model = None
-        if config_preprocess.RESTORE.DO_RESTORE:
+        if config_preprocess.RESTORE.MODEL_PATH != "":
             restoration_model = self.load_swinir_model(config_preprocess.RESTORE.MODEL_PATH)
             restoration_model.to(device)
             
