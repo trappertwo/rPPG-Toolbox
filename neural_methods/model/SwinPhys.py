@@ -144,16 +144,20 @@ class SwinPhys(nn.Module):
             self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
                 frames=num_frames).to(self.device)  # [3, T, 128,128]
 
-    def forward(self, frames):
+    def forward(self, x):
+        [batch, channel, length, width, height] = x.shape
+
+        restored_frames = x
+        # Assume batch size of 1
         if self.restore:
-            restored_frames = self.swinir_model(frames) # N, H, W, C
-        else:
-            restored_frames = frames
+            frames = x.squeeze().float().cpu().numpy()   # C, N, W, H
+            frames = frames.transpose(1, 2, 3, 0)   # N, W, H, C
+            restored_frames = self.swinir_model(frames) # # N, W, H, C
         #print(restored_frames.shape)
-        restored_frames = diff_normalize_data(restored_frames) # N, H, W, C
+        restored_frames = diff_normalize_data(restored_frames) # N, W, H, C
         #print(restored_frames.shape)
-        # Transpose to get data in the form C, N, H, W
+        # Transpose to get data in the form C, N, W, H
         restored_frames = restored_frames.transpose(3, 0, 1, 2)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        restored_frames = torch.from_numpy(restored_frames).float().unsqueeze(0).to(device) 
+        restored_frames = torch.from_numpy(restored_frames).float().unsqueeze(0).to(device) # batch_size, C, N, W, H
         return self.physnet_model(restored_frames)
