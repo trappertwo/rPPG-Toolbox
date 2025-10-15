@@ -11,11 +11,8 @@ import torch.nn as nn
 
 from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
 from torch.utils.data import DataLoader, Dataset
-
-
 from models.network_swinir import SwinIR as net
 from torch.utils.data import TensorDataset
-from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
 
 
 def load_swinir_model(model_path, window_size=7, img_size=126):
@@ -136,12 +133,15 @@ class SwinPhys(nn.Module):
         self.window_size = window_size
         self.img_size = img_size
         self.restore = restore
+        self.devuce = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
         # Load pretrained physnet
         if physnet_model_path != "":
             self.physnet_model = load_physnet_model(physnet_model_path, num_frames=num_frames)
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             self.physnet_model.to(device)
+        else:
+            self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
+                frames=num_frames).to(self.device)  # [3, T, 128,128]
 
     def forward(self, frames):
         if self.restore:
