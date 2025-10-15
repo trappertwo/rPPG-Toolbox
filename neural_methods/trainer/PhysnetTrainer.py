@@ -8,7 +8,7 @@ import torch.optim as optim
 from evaluation.metrics import calculate_metrics
 from neural_methods.loss.PhysNetNegPearsonLoss import Neg_Pearson
 from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
-from neural_methods.models.SwinPhys import SwinPhys
+from neural_methods.model.SwinPhys import SwinPhys
 from neural_methods.trainer.BaseTrainer import BaseTrainer
 from torch.autograd import Variable
 from tqdm import tqdm
@@ -208,6 +208,7 @@ class PhysnetTrainer(BaseTrainer):
             self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
         torch.save(self.model.state_dict(), model_path)
         print('Saved Model Path: ', model_path)
+
 
 
 
