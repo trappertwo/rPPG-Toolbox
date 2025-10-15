@@ -260,7 +260,7 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
             config_preprocess.RESIZE.H,
-            config_preprocess.RESTORE.DO_RESTORE,
+            restore = False,  # Disable restoring in preprocessing step, instead use SwinPhys hybrid model
             model=restoration_model)
         # Check data transformation type
         data = list()  # Video data
@@ -269,7 +269,11 @@ class BaseLoader(Dataset):
             if data_type == "Raw":
                 data.append(f_c)
             elif data_type == "DiffNormalized":
-                data.append(BaseLoader.diff_normalize_data(f_c))
+                if config_preprocess.RESTORE.DO_RESTORE:
+                    # Diff Normalization is applied after restoration
+                    data.append(f_c)
+                else:
+                    data.append(BaseLoader.diff_normalize_data(f_c))
             elif data_type == "Standardized":
                 data.append(BaseLoader.standardized_data(f_c))
             else:
