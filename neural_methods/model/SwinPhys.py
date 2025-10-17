@@ -102,7 +102,7 @@ class SwinIR(nn.Module):
             param.requires_grad = False
         # Unfreeze the last RSTB block and the final conv layers
         if not freeze:
-            for layer in model.blocks[-1:]:
+            for layer in self.swinir_model.layers[-1:]:
                 for param in layer.parameters():
                     param.requires_grad = True
             for param in self.swinir_model.conv_after_body.parameters():
