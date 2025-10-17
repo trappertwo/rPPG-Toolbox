@@ -98,10 +98,17 @@ class SwinIR(nn.Module):
         self.batch_size = batch_size
       
         # Freeze parameters of the model
-        if freeze:
-            for param in self.swinir_model.parameters():
-                param.requires_grad = False
-        
+        for param in self.swinir_model.parameters():
+            param.requires_grad = False
+        # Unfreeze the last RSTB block and the final conv layers
+        if not freeze:
+            for param in self.swinir_model.layers[-1]:
+                param.requires_grad = True
+            for param in self.swinir_model.conv_after_body:
+                param.requires_grad = True
+            for param in self.swinir_model.conv_last:
+                param.requires_grad = True
+                
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
 
