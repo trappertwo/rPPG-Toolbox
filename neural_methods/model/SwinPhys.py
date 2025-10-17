@@ -107,7 +107,8 @@ class SwinIR(nn.Module):
         height, width, channel = frames[0].shape
         #print(frames.shape)
         image_ds = ImageDataSet(frames, self.window_size)
-        image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
+        # Set batch_size to match the number of frames
+        image_dl = DataLoader(image_ds, batch_size=128, shuffle=False)
       
         restored_frames = []
         for batch in image_dl:
