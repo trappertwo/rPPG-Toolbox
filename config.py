@@ -94,8 +94,6 @@ _C.TRAIN.DATA.PREPROCESS.IBVP.DATA_MODE = 'RGB'
 _C.TRAIN.DATA.PREPROCESS.RESTORE = CN()
 _C.TRAIN.DATA.PREPROCESS.RESTORE.DO_RESTORE = False
 _C.TRAIN.DATA.PREPROCESS.RESTORE.MODEL_PATH = ''
-_C.TRAIN.DATA.PREPROCESS.RESTORE.FREEZE_SWINIR = True
-_C.TRAIN.DATA.PREPROCESS.RESTORE.FREEZE_PHYSNET = True
 
 
 # -----------------------------------------------------------------------------
@@ -318,6 +316,8 @@ _C.MODEL.PHYSNET = CN()
 _C.MODEL.PHYSNET.FRAME_NUM = 64
 _C.MODEL.PHYSNET.DO_RESTORE = False
 _C.MODEL.PHYSNET.SWINIR_MODEL_PATH = ''
+_C.MODEL.PHYSNET.FREEZE_SWINIR = True
+_C.MODEL.PHYSNET.FREEZE_PHYSNET = True
 
 # -----------------------------------------------------------------------------
 # Specific parameters for iBVPNet parameters
