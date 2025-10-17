@@ -90,15 +90,17 @@ class ImageDataSet(Dataset):
 
 
 class SwinIR(nn.Module):
-    def __init__(self, swinir_model_path, window_size=7, img_size=126):
+    def __init__(self, swinir_model_path, window_size=7, img_size=126, batch_size=128, freeze=True):
         super(SwinIR, self).__init__()
         self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size)
         self.window_size = window_size
         self.img_size = img_size
+        self.batch_size = batch_size
       
         # Freeze parameters of the model
-        for param in self.swinir_model.parameters():
-          param.requires_grad = False
+        if freeze:
+            for param in self.swinir_model.parameters():
+                param.requires_grad = False
         
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
@@ -107,8 +109,7 @@ class SwinIR(nn.Module):
         height, width, channel = frames[0].shape
         #print(frames.shape)
         image_ds = ImageDataSet(frames, self.window_size)
-        # Set batch_size to match the number of frames
-        image_dl = DataLoader(image_ds, batch_size=128, shuffle=False)
+        image_dl = DataLoader(image_ds, batch_size=self.batch_size, shuffle=False)
       
         restored_frames = []
         for batch in image_dl:
@@ -129,9 +130,9 @@ class SwinIR(nn.Module):
 class SwinPhys(nn.Module):
     """Hybrid model combining SwinIR and PhysNet models"""
     
-    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", window_size=7, img_size=126, num_frames=50):
+    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
         super(SwinPhys, self).__init__()
-        self.swinir_model = SwinIR(swinir_model_path, window_size=window_size, img_size=img_size)
+        self.swinir_model = SwinIR(swinir_model_path, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
         self.window_size = window_size
         self.img_size = img_size
         self.restore = restore
@@ -140,6 +141,9 @@ class SwinPhys(nn.Module):
         # Load pretrained physnet
         if physnet_model_path != "":
             self.physnet_model = load_physnet_model(physnet_model_path, num_frames=num_frames)
+            if freeze_physnet:
+                for param in self.physnet_model.parameters():
+                param.requires_grad = False
             self.physnet_model.to(self.device)
         else:
             self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
@@ -148,6 +152,8 @@ class SwinPhys(nn.Module):
     def forward(self, x):
         [batch, channel, length, width, height] = x.shape
 
+        print("SwinPhys Forward pass")
+        print(x.shape)
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
