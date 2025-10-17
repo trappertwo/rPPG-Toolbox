@@ -152,19 +152,18 @@ class SwinPhys(nn.Module):
     def forward(self, x):
         [batch, channel, length, width, height] = x.shape
 
-        print("SwinPhys Forward pass")
-        print(x.shape)
+        print("Input shape (CNWH): " + x.shape)
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
             frames = x.squeeze().float().cpu().numpy()   # C, N, W, H
             frames = frames.transpose(1, 2, 3, 0)   # N, W, H, C
             restored_frames = self.swinir_model(frames) # # N, W, H, C
-        #print(restored_frames.shape)
+            print("Restored shape (NWHC): " + restored_frames.shape)
         restored_frames = diff_normalize_data(restored_frames) # N, W, H, C
-        #print(restored_frames.shape)
         # Transpose to get data in the form C, N, W, H
         restored_frames = restored_frames.transpose(3, 0, 1, 2)
+        print("After diff normalization (CNWH): " + restored_frames.shape)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         restored_frames = torch.from_numpy(restored_frames).float().unsqueeze(0).to(device) # batch_size, C, N, W, H
         return self.physnet_model(restored_frames)
