@@ -47,21 +47,40 @@ def load_physnet_model(model_path, num_frames):
     return model
 
 
-def diff_normalize_data(data):
-    """Calculate discrete difference in video data along the time-axis and normalize by its standard deviation."""
-  
-    n, h, w, c = data.shape
-    diffnormalized_len = n - 1
-    diffnormalized_data = np.zeros((diffnormalized_len, h, w, c), dtype=np.float32)
-    diffnormalized_data_padding = np.zeros((1, h, w, c), dtype=np.float32)
+def diff_normalize_data(data: torch.Tensor) -> torch.Tensor:
+    """
+    Calculate discrete difference in video data along the time-axis and 
+    normalize by its standard deviation.
     
-    for j in range(diffnormalized_len):
-      diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
-          data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
-    diffnormalized_data = diffnormalized_data / np.std(diffnormalized_data)
-    diffnormalized_data = np.append(diffnormalized_data, diffnormalized_data_padding, axis=0)
-    diffnormalized_data[np.isnan(diffnormalized_data)] = 0
-    return diffnormalized_data
+    Args:
+        data: A torch.Tensor of shape (T, H, W, C).
+        
+    Returns:
+        A torch.Tensor of shape (T, H, W, C) containing the 
+        difference-normalized data, with a padding slice at the end.
+    """
+    # Original shape: (n, h, w, c) -> (T, H, W, C)
+    diff = data[1:, :, :, :] - data[:-1, :, :, :]
+    sum_term = data[1:, :, :, :] + data[:-1, :, :, :]  # (n-1, h, w, c)    
+    # The 'eps' (1e-7) prevents division by zero.
+    diffnormalized_data = diff / (sum_term + 1e-7)
+    std_dev = torch.std(diffnormalized_data)
+    if std_dev.item() > 1e-7:
+        diffnormalized_data = diffnormalized_data / std_dev  
+    diffnormalized_data[torch.isnan(diffnormalized_data)] = 0.0
+
+    # 6. Append the padding slice
+    h, w, c = data.shape[1:]
+    diffnormalized_data_padding = torch.zeros(
+        (1, h, w, c), 
+        dtype=data.dtype,
+        device=data.device
+    )
+    diffnormalized_data_padded = torch.cat(
+        (diffnormalized_data, diffnormalized_data_padding), 
+        dim=0
+    )
+    return diffnormalized_data_padded
 
 
 class ImageDataSet(Dataset):
@@ -165,12 +184,11 @@ class SwinPhys(nn.Module):
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
-            frames = x.squeeze().float().cpu().numpy()   # C, N, W, H
-            frames = frames.transpose(1, 2, 3, 0)   # N, W, H, C
+            frames = x.squeeze().float()   # C, N, W, H
+            frames = frames.permute(1, 2, 3, 0)   # N, W, H, C
             restored_frames = self.swinir_model(frames) # # N, W, H, C
-        restored_frames = diff_normalize_data(restored_frames) # N, W, H, C
+        restored_frames = diff_normalize_data_tensor(restored_frames) # N, W, H, C
         # Transpose to get data in the form C, N, W, H
-        restored_frames = restored_frames.transpose(3, 0, 1, 2)
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        restored_frames = torch.from_numpy(restored_frames).float().unsqueeze(0).to(device) # batch_size, C, N, W, H
+        restored_frames = restored_frames.permute(3, 0, 1, 2)
+        restored_frames = restored_frames.float().unsqueeze(0)  # batch_size, C, N, W, H
         return self.physnet_model(restored_frames)
