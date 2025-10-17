@@ -143,7 +143,7 @@ class SwinPhys(nn.Module):
             self.physnet_model = load_physnet_model(physnet_model_path, num_frames=num_frames)
             if freeze_physnet:
                 for param in self.physnet_model.parameters():
-                param.requires_grad = False
+                    param.requires_grad = False
             self.physnet_model.to(self.device)
         else:
             self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
