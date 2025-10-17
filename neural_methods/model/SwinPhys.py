@@ -105,10 +105,11 @@ class SwinIR(nn.Module):
             for layer in model.blocks[-1:]:
                 for param in layer.parameters():
                     param.requires_grad = True
-            for param in self.swinir_model.conv_after_body:
+            for param in self.swinir_model.conv_after_body.parameters():
                 param.requires_grad = True
-            for param in self.swinir_model.conv_last:
+            for param in self.swinir_model.conv_last.parameters():
                 param.requires_grad = True
+            print("Unfreezing layers from SwinIR")
                 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
@@ -152,6 +153,7 @@ class SwinPhys(nn.Module):
             if freeze_physnet:
                 for param in self.physnet_model.parameters():
                     param.requires_grad = False
+                print("Physnet is frozen")
             self.physnet_model.to(self.device)
         else:
             self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
