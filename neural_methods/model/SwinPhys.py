@@ -53,13 +53,12 @@ def diff_normalize_data(data: torch.Tensor) -> torch.Tensor:
     normalize by its standard deviation.
     
     Args:
-        data: A torch.Tensor of shape (T, H, W, C).
+        data: A torch.Tensor of shape (N, H, W, C).
         
     Returns:
-        A torch.Tensor of shape (T, H, W, C) containing the 
+        A torch.Tensor of shape (N, H, W, C) containing the 
         difference-normalized data, with a padding slice at the end.
     """
-    # Original shape: (n, h, w, c) -> (T, H, W, C)
     diff = data[1:, :, :, :] - data[:-1, :, :, :]
     sum_term = data[1:, :, :, :] + data[:-1, :, :, :]  # (n-1, h, w, c)    
     # The 'eps' (1e-7) prevents division by zero.
@@ -87,25 +86,15 @@ class ImageDataSet(Dataset):
     """Dataset for SwinIR model"""
     
     def __init__(self, frames, window_size = 7):
+        """Initialize the Dataset with a tensor with the shape NWHC"""
         self.frames = frames
         self.window_size = window_size
 
     def __len__(self):
-        return len(self.frames)
+      return self.frames.shape[0]
 
     def __getitem__(self, idx):
-        frame = self.frames[idx]
-        frame = frame.astype(np.float32)/ 255
-        frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        frame = torch.from_numpy(frame).float().to(device)
-        # pad input image to be a multiple of window_size
-        _, h_old, w_old = frame.size()
-        h_pad = (h_old // self.window_size + 1) * self.window_size - h_old
-        w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
-        frame = torch.cat([frame, torch.flip(frame, [1])], 1)[:, :h_old + h_pad, :]
-        frame = torch.cat([frame, torch.flip(frame, [2])], 2)[:, :, :w_old + w_pad]
-        return frame
+        return self.frames[0]  # C, W, H
 
 
 class SwinIR(nn.Module):
@@ -133,26 +122,42 @@ class SwinIR(nn.Module):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
 
+    def pad_frames(self, frames):
+        """
+        Args:
+        frames (torch.Tensor): The input tensor of shape (N, C, W, H).
+        window_size (int): The required factor for the padded dimensions.
+        
+        Returns:
+        torch.Tensor: The padded tensor with shape (N, C, W_padded, H_padded).
+        """    
+        _, _, h_old, w_old = frames.size()
+        h_pad = (h_old // self.window_size + 1) * self.window_size - h_old
+        w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
+        if w_pad == 0 and h_pad == 0:
+          return frames
+        frames = torch.cat([frames, torch.flip(frames, [2])], 2)[:, :, :h_old + h_pad, :]
+        frames = torch.cat([frames, torch.flip(frames, [3])], 3)[:, :, :, :w_old + w_pad]
+        return frames
+    
     def forward(self, frames):
-        height, width, channel = frames[0].shape
-        #print(frames.shape)
+        _, _, w_orig, h_orig = frames.shape # N, C, W, H
+        frames = frames.float() / 255.0
+        frames = self.pad_frames(frames)
+
         image_ds = ImageDataSet(frames, self.window_size)
         image_dl = DataLoader(image_ds, batch_size=self.batch_size, shuffle=False)
       
-        restored_frames = []
-        for batch in image_dl:
-            restored = self.swinir_model(batch)
-            for i in range(restored.shape[0]):
-                output = restored[i]
-                output = output[..., :height, :width]
-                output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-                if output.ndim == 3:
-                    output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
-                    output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
-                    restored_frames.append(output)
-            #print("Restored batch")
-            #media.show_image(output)
-        return np.array(restored_frames)
+        data_iterator = iter(image_dl)
+        first_batch_data = next(data_iterator)
+        # assume we have a single batch
+        restored = self.swinir_model(first_batch_data)
+        # Crop the padded area back to the original size (H_orig, W_orig)
+        output_cropped = restored[:, :, :h_orig, :w_orig]
+        # Clamp, scale to [0, 255], round, and convert to integer type (uint8 tensor)
+        # .clamp_(0, 1) is in-place and ensures output is valid [0, 1] range
+        output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
+        return output
 
 
 class SwinPhys(nn.Module):
@@ -185,10 +190,52 @@ class SwinPhys(nn.Module):
         # Assume batch size of 1
         if self.restore:
             frames = x.squeeze().float()   # C, N, W, H
-            frames = frames.permute(1, 2, 3, 0)   # N, W, H, C
-            restored_frames = self.swinir_model(frames) # # N, W, H, C
-        restored_frames = diff_normalize_data_tensor(restored_frames) # N, W, H, C
-        # Transpose to get data in the form C, N, W, H
-        restored_frames = restored_frames.permute(3, 0, 1, 2)
-        restored_frames = restored_frames.float().unsqueeze(0)  # batch_size, C, N, W, H
+            frames = frames.permute(1, 0, 2, 3)   # N, C, W, H
+            frames = self.swinir_model(frames)  # N, C, W, H
+            frames = frames.permute(0, 2, 3, 1)   # N, W, H, C
+            frames = diff_normalize_data(frames) # N, W, H, C
+            # Transpose to get data in the form C, N, W, H
+            frames = frames.permute(3, 0, 1, 2)
+            restored_frames = frames.float().unsqueeze(0)  # batch_size, C, N, W, H
+        return self.physnet_model(restored_frames)
+
+
+
+class SwinPhys(nn.Module):
+    """Hybrid model combining SwinIR and PhysNet models"""
+    
+    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
+        super(SwinPhys, self).__init__()
+        self.swinir_model = SwinIR(swinir_model_path, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
+        self.window_size = window_size
+        self.img_size = img_size
+        self.restore = restore
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+        # Load pretrained physnet
+        if physnet_model_path != "":
+            self.physnet_model = load_physnet_model(physnet_model_path, num_frames=num_frames)
+            if freeze_physnet:
+                for param in self.physnet_model.parameters():
+                    param.requires_grad = False
+                print("Physnet is frozen")
+            self.physnet_model.to(self.device)
+        else:
+            self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
+                frames=num_frames).to(self.device)  # [3, T, 128,128]
+
+    def forward(self, x):
+        [batch, channel, length, width, height] = x.shape
+
+        restored_frames = x
+        # Assume batch size of 1
+        if self.restore:
+            frames = x.squeeze().float()   # C, N, W, H
+            frames = frames.permute(1, 0, 2, 3)   # N, C, W, H
+            frames = self.swinir_model(frames)  # N, C, W, H
+            frames = frames.permute(0, 2, 3, 1)   # N, W, H, C
+            frames = diff_normalize_data(frames) # N, W, H, C
+            # Transpose to get data in the form C, N, W, H
+            frames = frames.permute(3, 0, 1, 2)
+            restored_frames = frames.float().unsqueeze(0)  # batch_size, C, N, W, H
         return self.physnet_model(restored_frames)
