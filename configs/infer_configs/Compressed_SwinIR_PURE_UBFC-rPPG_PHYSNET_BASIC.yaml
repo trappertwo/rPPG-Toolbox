@@ -8,9 +8,9 @@ TEST:
     DATASET: UBFC-rPPG
     DO_PREPROCESS: True                  # if first time, should be true
     DATA_FORMAT: NCDHW
-    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/DATASET_200_1_train_preprocess/DataFileLists1/" 
+    DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_150_1"                     # Raw dataset path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_150_1"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_150_1_preprocess/DataFileLists1/" 
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
@@ -30,7 +30,6 @@ TEST:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: True
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"    
       RESIZE:
         H: 72
         W: 72
@@ -43,6 +42,10 @@ MODEL:
   NAME: Physnet
   PHYSNET:
     FRAME_NUM: 128
+    DO_RESTORE: True
+    SWINIR_MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
+    FREEZE_SWINIR: True
+    FREEZE_PHYSNET: True
 INFERENCE:
   BATCH_SIZE: 4
   EVALUATION_METHOD: FFT        # "FFT" or "peak detection"
