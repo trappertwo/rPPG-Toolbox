@@ -227,17 +227,17 @@ class SwinPhys(nn.Module):
                 frames=num_frames).to(self.device)  # [3, T, 128,128]
 
     def forward(self, x):
-        [batch, channel, length, width, height] = x.shape
+        [batch, channel, length, width, height] = x.shape   # NCDHW
 
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
-            frames = x.squeeze().float()   # C, N, W, H
-            frames = frames.permute(1, 0, 2, 3)   # N, C, W, H
-            frames = self.swinir_model(frames)  # N, C, W, H
-            frames = frames.permute(0, 2, 3, 1)   # N, W, H, C
-            frames = diff_normalize_data(frames) # N, W, H, C
+            frames = x.squeeze().float()   # CDHW
+            frames = frames.permute(1, 0, 2, 3)   # DCHW
+            frames = self.swinir_model(frames)  # DCHW
+            frames = frames.permute(0, 2, 3, 1)   # DHWC
+            frames = diff_normalize_data(frames) # DHWC
             # Transpose to get data in the form C, N, W, H
-            frames = frames.permute(3, 0, 1, 2)
-            restored_frames = frames.float().unsqueeze(0)  # batch_size, C, N, W, H
+            frames = frames.permute(3, 0, 1, 2)   # CDHW
+            restored_frames = frames.float().unsqueeze(0)  # NDCHW
         return self.physnet_model(restored_frames)
