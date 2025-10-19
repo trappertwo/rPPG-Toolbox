@@ -106,16 +106,6 @@ class BaseLoader(Dataset):
                 print("Restoration model not specified")
             self.raw_data_dirs = self.get_raw_data(self.raw_data_path)
             self.preprocess_dataset(self.raw_data_dirs, config_data.PREPROCESS, config_data.BEGIN, config_data.END)
-            if config_data.PREPROCESS.RESTORE.DO_RESTORE:
-                print("Loading SwinIR")
-                #### Added for SwinIR
-                if os.path.exists(config_data.PREPROCESS.RESTORE.MODEL_PATH):
-                    self.swinir_model = self.load_swinir_model(config_data.PREPROCESS.RESTORE.MODEL_PATH, config_data.PREPROCESS.RESTORE.IMG_SIZE)
-                    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                    self.swinir_model.to(device)
-                    print("Loaded SwinIR restoration model")
-                else:
-                    print("Could not load SwinIR model")
         else:
             if not os.path.exists(self.cached_path):
                 print('CACHED_PATH:', self.cached_path)
@@ -438,19 +428,20 @@ class BaseLoader(Dataset):
         image_ds = ImageDataSet(frames, window_size)
         image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
         restored_frames = []
-        for batch in image_dl:
-            restored = self.swinir_model(batch)
-            for i in range(restored.shape[0]):
-                output = restored[i]
-                output = output[..., :height, :width]
-                output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-                if output.ndim == 3:
-                    output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
-                    output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
-                    restored_frames.append(output)
-            #print(output.shape)
-            media.show_image(output)
-            print(f"Restored batch: {restored_frames.shape}")
+        with torch.no_grad():
+            for batch in image_dl:
+                restored = self.swinir_model(batch)
+                for i in range(restored.shape[0]):
+                    output = restored[i]
+                    output = output[..., :height, :width]
+                    output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+                    if output.ndim == 3:
+                        output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
+                        output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
+                        restored_frames.append(output)
+                #print(output.shape)
+                media.show_image(output)
+                print(f"Restored batch: {restored_frames.shape}")
         return np.array(restored_frames)
 
     def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
