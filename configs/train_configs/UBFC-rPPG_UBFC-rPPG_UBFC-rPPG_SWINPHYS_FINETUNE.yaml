@@ -34,7 +34,7 @@ TRAIN:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: False
-        DIFF_NORMALIZE_AFTER_RESTORATION:true
+        DIFF_NORMALIZE_AFTER_RESTORATION: True
       RESIZE:
         H: 126     # SwinIR pretrained model uses 126X126 frames
         W: 126
@@ -67,7 +67,7 @@ VALID:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: False
-        DIFF_NORMALIZE_AFTER_RESTORATION:true
+        DIFF_NORMALIZE_AFTER_RESTORATION: True
       RESIZE:
         H: 126
         W: 126
