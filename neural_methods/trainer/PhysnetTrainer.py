@@ -30,10 +30,10 @@ class PhysnetTrainer(BaseTrainer):
         self.min_valid_loss = None
         self.best_epoch = 0
 
-        if config.MODEL.PHYSNET.DO_RESTORE:
+        if config.MODEL.PHYSNET.USE_SWINPHYS:
             swinir_model_path = config.MODEL.PHYSNET.SWINIR_MODEL_PATH
             # SwinIR pretrained model has image size 126
-            self.model = SwinPhys(swinir_model_path, restore=True, physnet_model_path=config.INFERENCE.MODEL_PATH,
+            self.model = SwinPhys(swinir_model_path, restore=config.MODEL.PHYSNET.DO_RESTORE, physnet_model_path=config.INFERENCE.MODEL_PATH,
                                  window_size=7, img_size=126, num_frames=config.MODEL.PHYSNET.FRAME_NUM,
                                  freeze_swinir=config.MODEL.PHYSNET.FREEZE_SWINIR, freeze_physnet=config.MODEL.PHYSNET.FREEZE_PHYSNET) # [3, T, 128,128]
         else:
@@ -210,6 +210,7 @@ class PhysnetTrainer(BaseTrainer):
             self.model_dir, self.model_file_name + '_Epoch' + str(index) + '.pth')
         torch.save(self.model.state_dict(), model_path)
         print('Saved Model Path: ', model_path)
+
 
 
 
