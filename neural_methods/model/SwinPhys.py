@@ -98,12 +98,13 @@ class ImageDataSet(Dataset):
 
 
 class SwinIR(nn.Module):
-    def __init__(self, swinir_model_path, window_size=7, img_size=126, batch_size=128, freeze=True):
+    def __init__(self, swinir_model_path, normalize=True, window_size=7, img_size=126, batch_size=128, freeze=True):
         super(SwinIR, self).__init__()
         self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size)
         self.window_size = window_size
         self.img_size = img_size
         self.batch_size = batch_size
+        self.normalize = normalize
       
         # Freeze parameters of the model
         for param in self.swinir_model.parameters():
@@ -144,7 +145,8 @@ class SwinIR(nn.Module):
     
     def forward(self, frames):
         _, _, w_orig, h_orig = frames.shape # N, C, W, H
-        frames = frames.float() / 255.0
+        if self.normalize:
+            frames = frames.float() / 255.0
         frames = self.pad_frames(frames)
 
         image_ds = ImageDataSet(frames, self.window_size)
@@ -158,19 +160,23 @@ class SwinIR(nn.Module):
         output_cropped = restored[:, :, :h_orig, :w_orig]
         # Clamp, scale to [0, 255], round, and convert to integer type (uint8 tensor)
         # .clamp_(0, 1) is in-place and ensures output is valid [0, 1] range
-        output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
+        if self.normalize:
+            output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
+        else:
+            output = output_cropped.clamp_(0, 1)
         return output
 
 
 class SwinPhys(nn.Module):
     """Hybrid model combining SwinIR and PhysNet models"""
     
-    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
+    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", diff_normalize=True, window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
         super(SwinPhys, self).__init__()
-        self.swinir_model = SwinIR(swinir_model_path, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
+        self.swinir_model = SwinIR(swinir_model_path, normalize=diff_normalize, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
         self.window_size = window_size
         self.img_size = img_size
         self.restore = restore
+        self.diff_normalize = diff_normalize
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
         # Load pretrained physnet
@@ -194,9 +200,12 @@ class SwinPhys(nn.Module):
             frames = x.squeeze().float()   # CDHW
             frames = frames.permute(1, 0, 2, 3)   # DCHW
             frames = self.swinir_model(frames)  # DCHW
-            frames = frames.permute(0, 2, 3, 1)   # DHWC
-            frames = diff_normalize_data(frames) # DHWC
-            # Transpose to get data in the form C, N, W, H
-            frames = frames.permute(3, 0, 1, 2)   # CDHW
-            restored_frames = frames.float().unsqueeze(0)  # NDCHW
+            if self.diff_normalize:
+                frames = frames.permute(0, 2, 3, 1)   # DHWC
+                frames = diff_normalize_data(frames) # DHWC
+                # Transpose to get data in the form C, N, W, H
+                frames = frames.permute(3, 0, 1, 2)   # CDHW
+            else:
+                frames = frames.permute(1, 0, 2, 3)  # CDHW
+            restored_frames = frames.float().unsqueeze(0)  # NCDHW
         return self.physnet_model(restored_frames)
