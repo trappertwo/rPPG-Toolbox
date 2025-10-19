@@ -92,15 +92,30 @@ class BaseLoader(Dataset):
         assert (config_data.END < 1 or config_data.END == 1)
         self.swinir_model = None
         if config_data.DO_PREPROCESS:
-            self.raw_data_dirs = self.get_raw_data(self.raw_data_path)
-            self.preprocess_dataset(self.raw_data_dirs, config_data.PREPROCESS, config_data.BEGIN, config_data.END)
+            #### Added for SwinIR
             if config_data.PREPROCESS.RESTORE.DO_RESTORE:
-                #### Added for SwinIR
-                if os.path.exists(config_preprocess.PREPROCESS.RESTORE.MODEL_PATH):
+                print("Loading SwinIR")
+                if os.path.exists(config_data.PREPROCESS.RESTORE.MODEL_PATH):
                     self.swinir_model = self.load_swinir_model(config_data.PREPROCESS.RESTORE.MODEL_PATH, config_data.PREPROCESS.RESTORE.IMG_SIZE)
                     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
                     self.swinir_model.to(device)
                     print("Loaded SwinIR restoration model")
+                else:
+                    print("Could not load SwinIR model")
+            else:
+                print("Restoration model not specified")
+            self.raw_data_dirs = self.get_raw_data(self.raw_data_path)
+            self.preprocess_dataset(self.raw_data_dirs, config_data.PREPROCESS, config_data.BEGIN, config_data.END)
+            if config_data.PREPROCESS.RESTORE.DO_RESTORE:
+                print("Loading SwinIR")
+                #### Added for SwinIR
+                if os.path.exists(config_data.PREPROCESS.RESTORE.MODEL_PATH):
+                    self.swinir_model = self.load_swinir_model(config_data.PREPROCESS.RESTORE.MODEL_PATH, config_data.PREPROCESS.RESTORE.IMG_SIZE)
+                    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                    self.swinir_model.to(device)
+                    print("Loaded SwinIR restoration model")
+                else:
+                    print("Could not load SwinIR model")
         else:
             if not os.path.exists(self.cached_path):
                 print('CACHED_PATH:', self.cached_path)
