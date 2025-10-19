@@ -186,47 +186,6 @@ class SwinPhys(nn.Module):
                 frames=num_frames).to(self.device)  # [3, T, 128,128]
 
     def forward(self, x):
-        [batch, channel, length, width, height] = x.shape
-
-        restored_frames = x
-        # Assume batch size of 1
-        if self.restore:
-            frames = x.squeeze().float()   # C, N, W, H
-            frames = frames.permute(1, 0, 2, 3)   # N, C, W, H
-            frames = self.swinir_model(frames)  # N, C, W, H
-            frames = frames.permute(0, 2, 3, 1)   # N, W, H, C
-            frames = diff_normalize_data(frames) # N, W, H, C
-            # Transpose to get data in the form C, N, W, H
-            frames = frames.permute(3, 0, 1, 2)
-            restored_frames = frames.float().unsqueeze(0)  # batch_size, C, N, W, H
-        return self.physnet_model(restored_frames)
-
-
-
-class SwinPhys(nn.Module):
-    """Hybrid model combining SwinIR and PhysNet models"""
-    
-    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
-        super(SwinPhys, self).__init__()
-        self.swinir_model = SwinIR(swinir_model_path, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
-        self.window_size = window_size
-        self.img_size = img_size
-        self.restore = restore
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-        # Load pretrained physnet
-        if physnet_model_path != "":
-            self.physnet_model = load_physnet_model(physnet_model_path, num_frames=num_frames)
-            if freeze_physnet:
-                for param in self.physnet_model.parameters():
-                    param.requires_grad = False
-                print("Physnet is frozen")
-            self.physnet_model.to(self.device)
-        else:
-            self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
-                frames=num_frames).to(self.device)  # [3, T, 128,128]
-
-    def forward(self, x):
         [batch, channel, length, width, height] = x.shape   # NCDHW
 
         restored_frames = x
