@@ -20,7 +20,7 @@ from multiprocessing import Pool, Process, Value, Array, Manager
 import cv2
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from retinaface import RetinaFace   # Source code: https://github.com/serengil/retinaface
 import torch
@@ -420,7 +420,7 @@ class BaseLoader(Dataset):
         """        
         height, width, channel = frames[0].shape
         #print(frames.shape)
-        image_ds = ImageDataSet(frames, self.window_size)
+        image_ds = ImageDataSet(frames, window_size)
         image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
         restored_frames = []
         for batch in image_dl:
