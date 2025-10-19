@@ -292,7 +292,7 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
             config_preprocess.RESIZE.H)
-        if config.preprocess.RESTORE.DO_RESTORE:
+        if config_preprocess.RESTORE.DO_RESTORE:
             print("Calling SwinIR ...")
             frames = self.restore(frames)
         # Check data transformation type
