@@ -434,7 +434,7 @@ class BaseLoader(Dataset):
                     output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
                     restored_frames.append(output)
             #print(output.shape)
-            #media.show_image(output)
+            media.show_image(output)
             print(f"Restored batch: {restored_frames.shape}")
         return np.array(restored_frames)
 
