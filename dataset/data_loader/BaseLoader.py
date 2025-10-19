@@ -28,6 +28,30 @@ import torch
 #### Added for SwinIR
 from models.network_swinir import SwinIR as net
 
+
+class ImageDataSet(Dataset):
+  def __init__(self, frames, window_size = 7):
+    self.frames = frames
+    self.window_size = window_size
+
+  def __len__(self):
+    return len(self.frames)
+
+  def __getitem__(self, idx):
+    frame = self.frames[idx]
+    frame = frame.astype(np.float32)/ 255
+    frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    frame = torch.from_numpy(frame).float().to(device)
+    # pad input image to be a multiple of window_size
+    _, h_old, w_old = frame.size()
+    h_pad = (h_old // self.window_size + 1) * self.window_size - h_old
+    w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
+    frame = torch.cat([frame, torch.flip(frame, [1])], 1)[:, :h_old + h_pad, :]
+    frame = torch.cat([frame, torch.flip(frame, [2])], 2)[:, :, :w_old + w_pad]
+    return frame
+
+
 class BaseLoader(Dataset):
     """The base class for data loading based on pytorch Dataset.
 
@@ -66,9 +90,17 @@ class BaseLoader(Dataset):
         assert (config_data.BEGIN < config_data.END)
         assert (config_data.BEGIN > 0 or config_data.BEGIN == 0)
         assert (config_data.END < 1 or config_data.END == 1)
+        self.swinir_model = None
         if config_data.DO_PREPROCESS:
             self.raw_data_dirs = self.get_raw_data(self.raw_data_path)
             self.preprocess_dataset(self.raw_data_dirs, config_data.PREPROCESS, config_data.BEGIN, config_data.END)
+            if config_data.PREPROCESS.RESTORE.DO_RESTORE:
+                #### Added for SwinIR
+                if os.path.exists(config_preprocess.PREPROCESS.RESTORE.MODEL_PATH):
+                    self.swinir_model = self.load_swinir_model(config_data.PREPROCESS.RESTORE.MODEL_PATH, config_data.PREPROCESS.RESTORE.IMG_SIZE)
+                    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                    self.swinir_model.to(device)
+                    print("Loaded SwinIR restoration model")
         else:
             if not os.path.exists(self.cached_path):
                 print('CACHED_PATH:', self.cached_path)
@@ -214,7 +246,7 @@ class BaseLoader(Dataset):
         print("Total Number of raw files preprocessed:", len(data_dirs_split), end='\n\n')
 
     #### Added for SwinIR
-    def load_swinir_model(self, model_path):
+    def load_swinir_model(self, model_path, img_size=126):
         """Loads the pretrained SwinIR model
 
         Args:
@@ -226,7 +258,7 @@ class BaseLoader(Dataset):
         else:
             raise ValueError(f'model {model_path} does not exist.')
         
-        model = net(upscale=1, in_chans=3, img_size=126, window_size=7,
+        model = net(upscale=1, in_chans=3, img_size=img_size, window_size=7,
                     img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
         param_key_g = 'params'
@@ -236,7 +268,7 @@ class BaseLoader(Dataset):
         print("Loaded SwinIR model...")
         return model
         
-    def preprocess(self, frames, bvps, config_preprocess, restoration_model):
+    def preprocess(self, frames, bvps, config_preprocess):
         """Preprocesses a pair of data.
 
         Args:
@@ -259,9 +291,10 @@ class BaseLoader(Dataset):
             config_preprocess.CROP_FACE.DETECTION.DYNAMIC_DETECTION_FREQUENCY,
             config_preprocess.CROP_FACE.DETECTION.USE_MEDIAN_FACE_BOX,
             config_preprocess.RESIZE.W,
-            config_preprocess.RESIZE.H,
-            restore = False,  # Disable restoring in preprocessing step, instead use SwinPhys hybrid model
-            model=restoration_model)
+            config_preprocess.RESIZE.H)
+        if config.preprocess.RESTORE.DO_RESTORE:
+            print("Calling SwinIR ...")
+            frames = self.restore(frames)
         # Check data transformation type
         data = list()  # Video data
         for data_type in config_preprocess.DATA_TYPE:
@@ -269,11 +302,13 @@ class BaseLoader(Dataset):
             if data_type == "Raw":
                 data.append(f_c)
             elif data_type == "DiffNormalized":
-                if config_preprocess.RESTORE.DO_RESTORE:
+                if config_preprocess.RESTORE.DIFF_NORMALIZE_AFTER_RESTORATION:
                     # Diff Normalization is applied after restoration
+                    print("Skipping diff-normalization")
                     data.append(f_c)
                 else:
                     data.append(BaseLoader.diff_normalize_data(f_c))
+                    print("Diff normalized data")
             elif data_type == "Standardized":
                 data.append(BaseLoader.standardized_data(f_c))
             else:
@@ -377,69 +412,34 @@ class BaseLoader(Dataset):
         return face_box_coor
 
     #### Added for SwinIR restotation
-    def swinir_model_inference(self, img_lq, model, window_size, scale, tile=None, tile_overlap=0):
-        if tile is None:
-            # test the image as a whole
-            output = model(img_lq)
-        else:
-            # test the image tile by tile
-            b, c, h, w = img_lq.size()
-            tile = min(tile, h, w)
-            assert tile % window_size == 0, "tile size should be a multiple of window_size"
-            sf = scale
-            
-            stride = tile - tile_overlap
-            h_idx_list = list(range(0, h-tile, stride)) + [h-tile]
-            w_idx_list = list(range(0, w-tile, stride)) + [w-tile]
-            E = torch.zeros(b, c, h*sf, w*sf).type_as(img_lq)
-            W = torch.zeros_like(E)
-            
-            for h_idx in h_idx_list:
-                for w_idx in w_idx_list:
-                    in_patch = img_lq[..., h_idx:h_idx+tile, w_idx:w_idx+tile]
-                    out_patch = model(in_patch)
-                    out_patch_mask = torch.ones_like(out_patch)
-
-                    E[..., h_idx*sf:(h_idx+tile)*sf, w_idx*sf:(w_idx+tile)*sf].add_(out_patch)
-                    W[..., h_idx*sf:(h_idx+tile)*sf, w_idx*sf:(w_idx+tile)*sf].add_(out_patch_mask)
-            output = E.div_(W)        
-        return output
-
-    #### Added for SwinIR restotation
-    def img_restore_swinir(self, img_lq, model, window_size=7, scale=40):
-        """Restore low quality image by remove compresssion artifacts using SwinIR pretrained model.
+    def restore(self, frames, window_size=7, scale=1):
+        """Restore low quality images by remove compresssion artifacts using SwinIR pretrained model.
         
         Args:
-        img_lq: the low quality image
-        model: the pretrained SwinIR model
-        """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        
-        img_lq = img_lq.astype(np.float32)/ 255
-        img_lq = np.transpose(img_lq if img_lq.shape[2] == 1 else img_lq[:, :, [2, 1, 0]], (2, 0, 1))  # HCW-BGR to CHW-RGB
-        img_lq = torch.from_numpy(img_lq).float().unsqueeze(0).to(device)  # CHW-RGB to NCHW-RGB
-        
-        # inference
-        with torch.no_grad():
-            # pad input image to be a multiple of window_size
-            _, _, h_old, w_old = img_lq.size()
-            h_pad = (h_old // window_size + 1) * window_size - h_old
-            w_pad = (w_old // window_size + 1) * window_size - w_old
-            img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
-            img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
-            output = self.swinir_model_inference(img_lq, model, window_size, scale)
-            output = output[..., :h_old * scale, :w_old * scale]
-
-            # save image
-            output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
-            if output.ndim == 3:
-                output = np.transpose(output[[2, 1, 0], :, :], (1, 2, 0))  # CHW-RGB to HCW-BGR
-                output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
-                #cv2.imwrite(f'{save_dir}/{imgname}_SwinIR.png', output)
-        return output
+        frames: list of image frames from a video clip
+        """        
+        height, width, channel = frames[0].shape
+        #print(frames.shape)
+        image_ds = ImageDataSet(frames, self.window_size)
+        image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
+        restored_frames = []
+        for batch in image_dl:
+            restored = self.swinir_model(batch)
+            for i in range(restored.shape[0]):
+                output = restored[i]
+                output = output[..., :height, :width]
+                output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
+                if output.ndim == 3:
+                    output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
+                    output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
+                    restored_frames.append(output)
+            #print(output.shape)
+            #media.show_image(output)
+            print(f"Restored batch: {restored_frames.shape}")
+        return np.array(restored_frames)
 
     def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
-                         detection_freq, use_median_box, width, height, restore=False, model=None):
+                         detection_freq, use_median_box, width, height):
         """Crop face and resize frames.
 
         Args:
@@ -454,8 +454,6 @@ class BaseLoader(Dataset):
             use_face_detection(bool):  Whether crop the face.
             larger_box_coef(float): the coefficient of the larger region(height and weight),
                                 the middle point of the detected region will stay still during the process of enlarging.
-            restore(bool): Whether to restore image using SwinIR compression artifact reduction model
-            model(Model): SwinIR model
         Returns:
             resized_frames(list[np.array(float)]): Resized and cropped frames
         """
@@ -494,15 +492,6 @@ class BaseLoader(Dataset):
             
             # Resize the frame
             resized_frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
-
-            #### Added for SwinIR restoration
-            if restore:
-                resized_frame = self.img_restore_swinir(resized_frame, model)
-                if i % 1000 == 0:
-                    print("Restored 1000 frames")
-
-            # resize again since SwinIR changes 72X72 to 77X77 (multiple of 7)
-            resized_frames[i] = cv2.resize(resized_frame, (width, height), interpolation=cv2.INTER_AREA)
         return resized_frames
 
     def chunk(self, frames, bvps, chunk_length):
