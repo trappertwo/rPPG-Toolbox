@@ -40,12 +40,12 @@ class ImageDataSet(Dataset):
   def __getitem__(self, idx):
     frame = self.frames[idx]
     if idx == 0:
-      print(frame.shape)
-      print(frame[0])
+      print(f"Shape of the frame returned from __getitem__: {frame.shape}")
+      print(f"First frame from __getitem__: {frame[0]}")
     frame = frame.astype(np.float32)/ 255
     frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
     if idx == 0:
-      print(frame.shape)
+      print(f"Frame shape after normalization: {frame.shape}")
       print(frame[0])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     frame = torch.from_numpy(frame).float().to(device)
@@ -432,7 +432,8 @@ class BaseLoader(Dataset):
         frames: list of image frames from a video clip
         """        
         height, width, channel = frames[0].shape
-        print(frames.shape)
+        print(f"Input frames in restore(): {frames[0].shape)
+        print(f"First input frame in restore(): {frames[0]}")
         image_ds = ImageDataSet(frames, window_size)
         image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
         restored_frames = []
