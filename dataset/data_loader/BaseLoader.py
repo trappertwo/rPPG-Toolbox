@@ -307,7 +307,7 @@ class BaseLoader(Dataset):
             config_preprocess.RESIZE.H)
         if config_preprocess.RESTORE.DO_RESTORE:
             print("Calling SwinIR ...")
-            #restored_frames = self.restore(frames)
+            restored_frames = self.restore(frames)
             #frame = frames[0]
             #restored_frame = restored_frames[0]
             #print(f"First frame: {frame}")
