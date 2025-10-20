@@ -11,6 +11,9 @@ from dataset import data_loader
 from neural_methods import trainer
 from unsupervised_methods.unsupervised_predictor import unsupervised_predict
 from torch.utils.data import DataLoader
+import torch.multiprocessing as mp
+
+mp.set_start_method('spawn', force=True)
 
 RANDOM_SEED = 100
 torch.manual_seed(RANDOM_SEED)
