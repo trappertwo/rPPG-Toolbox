@@ -39,14 +39,14 @@ class ImageDataSet(Dataset):
 
   def __getitem__(self, idx):
     frame = self.frames[idx]
-    if idx == 0:
-      print(f"Shape of the frame returned from __getitem__: {frame.shape}")
-      print(f"First frame from __getitem__: {frame[0]}")
+    #if idx == 0:
+      #print(f"Shape of the frame returned from __getitem__: {frame.shape}")
+      #print(f"First frame from __getitem__: {frame[0]}")
     frame = frame.astype(np.float32)/ 255
     frame = frame.transpose(2, 0, 1)  # HWC-RGB to CHW-RGB
-    if idx == 0:
-      print(f"Frame shape after normalization: {frame.shape}")
-      print(frame[0])
+    #if idx == 0:
+      #print(f"Frame shape after normalization: {frame.shape}")
+      #print(frame[0])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     frame = torch.from_numpy(frame).float().to(device)
     # pad input image to be a multiple of window_size
@@ -55,8 +55,8 @@ class ImageDataSet(Dataset):
     w_pad = (w_old // self.window_size + 1) * self.window_size - w_old
     frame = torch.cat([frame, torch.flip(frame, [1])], 1)[:, :h_old + h_pad, :]
     frame = torch.cat([frame, torch.flip(frame, [2])], 2)[:, :, :w_old + w_pad]
-    if idx == 0:
-      print(frame.shape)
+    #if idx == 0:
+      #print(frame.shape)
     return frame
 
 
@@ -432,8 +432,8 @@ class BaseLoader(Dataset):
         frames: list of image frames from a video clip
         """        
         height, width, channel = frames[0].shape
-        print(f"Input frames in restore(): {frames[0].shape}")
-        print(f"First input frame in restore(): {frames[0]}")
+        #print(f"Input frames in restore(): {frames[0].shape}")
+        #print(f"First input frame in restore(): {frames[0]}")
         image_ds = ImageDataSet(frames, window_size)
         image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
         restored_frames = []
@@ -442,17 +442,17 @@ class BaseLoader(Dataset):
                 restored = self.swinir_model(batch)
                 for i in range(restored.shape[0]):
                   output = restored[i]
-                  if i == 0:
-                    print(f"Output shape {output.shape}")
-                    print(output)
+                  #if i == 0:
+                    #print(f"Output shape {output.shape}")
+                    #print(output)
                   output = output[..., :height, :width]
                   output = output.data.squeeze().float().cpu().clamp_(0, 1).numpy()
                   if output.ndim == 3:
                         output = output.transpose(1, 2, 0)  # CHW-RGB to HWC-RGB
                         output = (output * 255.0).round().astype(np.uint8)  # float32 to uint8
-                        if i == 0:
-                          print(f"Output shape {output.shape}")
-                          print(output)
+                        #if i == 0:
+                          #print(f"Output shape {output.shape}")
+                          #print(output)
                         restored_frames.append(output)
         return np.array(restored_frames)
 
