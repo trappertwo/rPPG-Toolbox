@@ -307,12 +307,12 @@ class BaseLoader(Dataset):
             config_preprocess.RESIZE.H)
         if config_preprocess.RESTORE.DO_RESTORE:
             print("Calling SwinIR ...")
-            restored_frames = self.restore(frames)
-            frame = frames[0]
-            restored_frame = restored_frames[0]
-            print(f"First frame: {frame}")
-            print(f"First restored frame: {restored_frame}")
-            print(f"Diffs: {restored_frame - frame}")
+            #restored_frames = self.restore(frames)
+            #frame = frames[0]
+            #restored_frame = restored_frames[0]
+            #print(f"First frame: {frame}")
+            #print(f"First restored frame: {restored_frame}")
+            #print(f"Diffs: {restored_frame - frame}")
             frames = restored_frames
         # Check data transformation type
         data = list()  # Video data
@@ -328,7 +328,7 @@ class BaseLoader(Dataset):
                 else:
                     diff_normalized = BaseLoader.diff_normalize_data(f_c)
                     data.append(diff_normalized)
-                    print(f"Diff normalized data: {diff_normalized[0]}")
+                    print("Diff normalized data")
             elif data_type == "Standardized":
                 data.append(BaseLoader.standardized_data(f_c))
             else:
