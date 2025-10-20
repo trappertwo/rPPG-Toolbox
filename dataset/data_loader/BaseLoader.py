@@ -456,7 +456,7 @@ class BaseLoader(Dataset):
                         restored_frames.append(output)
         return np.array(restored_frames)
 
-  def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
+    def crop_face_resize(self, frames, use_face_detection, backend, use_larger_box, larger_box_coef, use_dynamic_detection, 
                          detection_freq, use_median_box, width, height):
         """Crop face and resize frames.
 
