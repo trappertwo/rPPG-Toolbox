@@ -2,18 +2,18 @@ BASE: ['']
 TOOLBOX_MODE: "train_and_test" # "train_and_test"  or "only_test"
 TRAIN:
   BATCH_SIZE: 1
-  EPOCHS: 10          # Fewer epochs needed for finetuning
+  EPOCHS: 20          # Fewer epochs needed for finetuning
   LR: 9e-3
   MODEL_FILE_NAME: UBFC_UBFC_UBFC_physnet_stan
   PLOT_LOSSES_AND_LR: True
   DATA:
     FS: 30
     DATASET: UBFC-rPPG
-    DO_PREPROCESS: False            # if first time, should be true
+    DO_PREPROCESS: True          # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_preprocess"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_preprocess/DataFileLists1/" 
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_100_1_preprocess"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_100_1_preprocess/DataFileLists1/" 
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 0.8
@@ -34,19 +34,21 @@ TRAIN:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: False
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
+        DIFF_NORMALIZE_AFTER_RESTORATION: False
+        IMG_SIZE: 126
       RESIZE:
-        H: 126     # SwinIR pretrained model uses 126X126 frames
-        W: 126
+        H: 128     # SwinIR pretrained model uses 126X126 frames
+        W: 128
 VALID:
   DATA:
     FS: 30
     DATASET: UBFC-rPPG
-    DO_PREPROCESS: false               # if first time, should be true
+    DO_PREPROCESS: True               # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold"                      # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_preprocess"    # Processed dataset save path, need to be updated
-    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_preprocess/DataFileLists2/"    # Path to store file lists, needs to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_100_1_preprocess"    # Processed dataset save path, need to be updated
+    FILE_LIST_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/train_fold_100_1_preprocess/DataFileLists2/"    # Path to store file lists, needs to be updated
     EXP_DATA_NAME: ""
     BEGIN: 0.8
     END: 1.0
@@ -67,21 +69,23 @@ VALID:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: False
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
+        DIFF_NORMALIZE_AFTER_RESTORATION: False
+        IMG_SIZE: 126
       RESIZE:
-        H: 126
-        W: 126
+        H: 128
+        W: 128
 TEST:
-  OUTPUT_SAVE_DIR: "/content/drive/MyDrive/research_project/runs/exp/test_data_150_1_output"
+  OUTPUT_SAVE_DIR: "/content/drive/MyDrive/research_project/runs/exp/output"
   METRICS: ['MAE', 'RMSE', 'MAPE', 'Pearson', 'SNR', 'BA']
   USE_LAST_EPOCH: False                    # to use provided validation dataset to find the best epoch, should be false
   DATA:
     FS: 30
     DATASET: UBFC-rPPG
-    DO_PREPROCESS: False                   # if first time, should be true
+    DO_PREPROCESS: True                  # if first time, should be true
     DATA_FORMAT: NCDHW
     DATA_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_fold"                     # Raw dataset path, need to be updated
-    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_fold_preprocess"    # Processed dataset save path, need to be updated
+    CACHED_PATH: "/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_fold_100_1_preprocess"    # Processed dataset save path, need to be updated
     EXP_DATA_NAME: ""
     BEGIN: 0.0
     END: 1.0
@@ -101,20 +105,23 @@ TEST:
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
         DO_RESTORE: False
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
+        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
+        DIFF_NORMALIZE_AFTER_RESTORATION: False
+        IMG_SIZE: 126
       RESIZE:
-        H: 126
-        W: 126
+        H: 128
+        W: 128
 DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
-  PATH: /content/drive/MyDrive/research_project/runs/exp/swin_exp_1
+  PATH: /content/drive/MyDrive/research_project/runs/exp/100_1_swinphys
 MODEL:
   DROP_RATE: 0.2
   NAME: Physnet
   PHYSNET:
     FRAME_NUM: 128
-    DO_RESTORE: True
+    DO_RESTORE: False
+    USE_SWINPHYS: False
     SWINIR_MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
     FREEZE_SWINIR: True
     FREEZE_PHYSNET: False
