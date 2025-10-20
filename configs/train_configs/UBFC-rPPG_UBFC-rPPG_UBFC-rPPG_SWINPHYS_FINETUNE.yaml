@@ -33,7 +33,7 @@ TRAIN:
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
-        DO_RESTORE: False
+        DO_RESTORE: True
         MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
         DIFF_NORMALIZE_AFTER_RESTORATION: False
         IMG_SIZE: 126
@@ -68,7 +68,7 @@ VALID:
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
-        DO_RESTORE: False
+        DO_RESTORE: True
         MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
         DIFF_NORMALIZE_AFTER_RESTORATION: False
         IMG_SIZE: 126
@@ -104,7 +104,7 @@ TEST:
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
       RESTORE:
-        DO_RESTORE: False
+        DO_RESTORE: True
         MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
         DIFF_NORMALIZE_AFTER_RESTORATION: False
         IMG_SIZE: 126
