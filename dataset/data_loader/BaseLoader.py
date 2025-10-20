@@ -432,7 +432,7 @@ class BaseLoader(Dataset):
         frames: list of image frames from a video clip
         """        
         height, width, channel = frames[0].shape
-        print(f"Input frames in restore(): {frames[0].shape)
+        print(f"Input frames in restore(): {frames[0].shape}")
         print(f"First input frame in restore(): {frames[0]}")
         image_ds = ImageDataSet(frames, window_size)
         image_dl = DataLoader(image_ds, batch_size=50, shuffle=False)
