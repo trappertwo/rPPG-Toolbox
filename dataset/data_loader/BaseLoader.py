@@ -16,7 +16,6 @@ from unsupervised_methods.methods import POS_WANG
 from unsupervised_methods import utils
 import math
 from multiprocessing import Pool, Process, Value, Array, Manager
-import mediapy as media
 
 import cv2
 import numpy as np
@@ -309,10 +308,11 @@ class BaseLoader(Dataset):
         if config_preprocess.RESTORE.DO_RESTORE:
             print("Calling SwinIR ...")
             restored_frames = self.restore(frames)
-            print("First frame: {frames[0]}")
-            media.show_image(frames[0])
-            print("First restored frame: {restored_frames[0]")
-            media.show_image(restored_frames[0])
+            frame = frames[0]
+            restored_frame = restored_frames[0]
+            print(f"First frame: {frame}")
+            print(f"First restored frame: {restored_frame}")
+            print(f"Diffs: {restored_frame - frame}")
             frames = restored_frames
         # Check data transformation type
         data = list()  # Video data
@@ -328,8 +328,7 @@ class BaseLoader(Dataset):
                 else:
                     diff_normalized = BaseLoader.diff_normalize_data(f_c)
                     data.append(diff_normalized)
-                    print("Diff normalized data")
-                    media.show_image(diff_normalized)
+                    print(f"Diff normalized data: {diff_normalized[0]}")
             elif data_type == "Standardized":
                 data.append(BaseLoader.standardized_data(f_c))
             else:
