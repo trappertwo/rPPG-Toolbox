@@ -33,8 +33,8 @@ TEST:
         DIFF_NORMALIZE_AFTER_RESTORATION: False
         IMG_SIZE: 126
       RESIZE:
-        H: 126
-        W: 126
+        H: 72
+        W: 72
 DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
