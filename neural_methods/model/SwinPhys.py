@@ -94,7 +94,7 @@ class ImageDataSet(Dataset):
       return self.frames.shape[0]
 
     def __getitem__(self, idx):
-        return self.frames[0]  # C, W, H
+        return self.frames[idx]  # C, W, H
 
 
 class SwinIR(nn.Module):
@@ -112,10 +112,10 @@ class SwinIR(nn.Module):
         # Unfreeze the last RSTB block and the final conv layers
         if not freeze:
             # Unfreeze the last RSTB block
-            # for layer in self.swinir_model.layers[-1:]:
-            #    for param in layer.parameters():
-            #        param.requires_grad = True
-            # Unfreeze only the last two convolutional layers
+            for layer in self.swinir_model.layers[-1:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
+            # Unfreeze the last two convolutional layers
             for param in self.swinir_model.conv_after_body.parameters():
                 param.requires_grad = True
             for param in self.swinir_model.conv_last.parameters():
@@ -152,19 +152,21 @@ class SwinIR(nn.Module):
         image_ds = ImageDataSet(frames, self.window_size)
         image_dl = DataLoader(image_ds, batch_size=self.batch_size, shuffle=False)
       
-        data_iterator = iter(image_dl)
-        first_batch_data = next(data_iterator)
-        # assume we have a single batch
-        restored = self.swinir_model(first_batch_data)
-        # Crop the padded area back to the original size (H_orig, W_orig)
-        output_cropped = restored[:, :, :h_orig, :w_orig]
-        # Clamp, scale to [0, 255], round, and convert to integer type (uint8 tensor)
-        # .clamp_(0, 1) is in-place and ensures output is valid [0, 1] range
-        if self.normalize:
-            output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
-        else:
-            output = output_cropped.clamp_(0, 1)
-        return output
+        for i, batch in enumerate(image_dl):
+            print(f"Batch {i}: {batch}")
+            restored = self.swinir_model(batch)
+            # Crop the padded area back to the original size (H_orig, W_orig)
+            output_cropped = restored[:, :, :h_orig, :w_orig]
+            # Clamp, scale to [0, 255], round, and convert to integer type (uint8 tensor)
+            # .clamp_(0, 1) is in-place and ensures output is valid [0, 1] range
+            if self.normalize:
+                output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
+            else:
+                output = output_cropped.clamp_(0, 1)
+            #diff_normal = diff_normalize_data(output)
+            #print(f"Diff normalized 2: {diff_normal}")
+          # assume we have a single batch
+          return output
 
 
 class SwinPhys(nn.Module):
@@ -193,27 +195,26 @@ class SwinPhys(nn.Module):
 
     def forward(self, x):
         [batch, channel, length, width, height] = x.shape   # NCDHW
-        print(f"Input shape: {x.shape}")
+        #print(f"Input shape: {x.shape}")
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
             frames = x.squeeze().float()   # CDHW
             frames = frames.permute(1, 0, 2, 3)   # DCHW
-            print(f"DCHW: {frames.shape}")
+            #print(f"DCHW: {frames.shape}")
             frames = self.swinir_model(frames)  # DCHW
-            print(f"After SwinIR DCHW: {frames.shape}")
-            print(f"Restored: {frames[0]}")
+            #print(f"After SwinIR DCHW: {frames.shape}")
+            #print(f"Restored: {frames[0]}")
             if self.diff_normalize:
                 frames = frames.permute(0, 2, 3, 1)   # DHWC
-                print(f"After permute DHWC: {frames.shape}")
+                #print(f"After permute DHWC: {frames.shape}")
                 frames = diff_normalize_data(frames) # DHWC
-                print(f"After diff_normalize DHWC: {frames.shape}")
-                print(f"Diff normalized: {frames[0]}")
+                #print(f"After diff_normalize DHWC: {frames.shape}")
                 # Transpose to get data in the form C, N, W, H
                 frames = frames.permute(3, 0, 1, 2)   # CDHW
-                print(f"After permute CDHW: {frames.shape}")
+                #print(f"After permute CDHW: {frames.shape}")
             else:
                 frames = frames.permute(1, 0, 2, 3)  # CDHW
             restored_frames = frames.float().unsqueeze(0)  # NCDHW
-        print(f"Restored frames NCDHW: {restored_frames.shape}")
+        print(f"Restored frames NCDHW: {restored_frames}")
         return self.physnet_model(restored_frames)
