@@ -43,7 +43,7 @@ def load_physnet_model(model_path, num_frames):
         raise ValueError(f'model {model_path} does not exist.')
     model = PhysNet_padding_Encoder_Decoder_MAX(frames=num_frames)
     model.load_state_dict(torch.load(model_path))
-    print("Testing uses Physnet pretrained model!")
+    print("Using Physnet pretrained model!")
     return model
 
 
@@ -112,9 +112,9 @@ class SwinIR(nn.Module):
         # Unfreeze the last RSTB block and the final conv layers
         if not freeze:
             # Unfreeze the last RSTB block
-            for layer in self.swinir_model.layers[-1:]:
-                for param in layer.parameters():
-                    param.requires_grad = True
+            #for layer in self.swinir_model.layers[-1:]:
+            #    for param in layer.parameters():
+            #        param.requires_grad = True
             # Unfreeze the last two convolutional layers
             for param in self.swinir_model.conv_after_body.parameters():
                 param.requires_grad = True
@@ -185,6 +185,8 @@ class SwinPhys(nn.Module):
                 for param in self.physnet_model.parameters():
                     param.requires_grad = False
                 print("Physnet is frozen")
+            else:
+                print("Unfreezing Physnet")
             self.physnet_model.to(self.device)
         else:
             self.physnet_model = PhysNet_padding_Encoder_Decoder_MAX(
