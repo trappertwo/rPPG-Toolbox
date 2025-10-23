@@ -2,8 +2,8 @@ BASE: ['']
 TOOLBOX_MODE: "train_and_test" # "train_and_test"  or "only_test"
 TRAIN:
   BATCH_SIZE: 1
-  EPOCHS: 10          # Fewer epochs needed for finetuning
-  LR: 1e-4       # was 9e-3
+  EPOCHS: 20          # Fewer epochs needed for finetuning
+  LR: 1e-3       # was 9e-3
   MODEL_FILE_NAME: UBFC_UBFC_UBFC_physnet_stan
   PLOT_LOSSES_AND_LR: True
   DATA:
@@ -114,7 +114,7 @@ TEST:
 DEVICE: cuda:0
 NUM_OF_GPU_TRAIN: 1
 LOG:
-  PATH: /content/drive/MyDrive/research_project/runs/exp/100_1_72_swinphys
+  PATH: /content/drive/MyDrive/research_project/runs/exp/200_1_72_swinphys
 MODEL:
   DROP_RATE: 0.2
   NAME: Physnet
@@ -131,4 +131,4 @@ INFERENCE:
   EVALUATION_WINDOW:
     USE_SMALLER_WINDOW: False        # Change this if you'd like an evaluation window smaller than the test video length
     WINDOW_SIZE: 10        # In seconds
-  MODEL_PATH: "./final_model_release/UBFC-rPPG_PhysNet_DiffNormalized.pth"
+  MODEL_PATH: "./final_model_release/PURE_PhysNet_DiffNormalized.pth"
