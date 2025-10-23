@@ -153,7 +153,6 @@ class SwinIR(nn.Module):
         image_dl = DataLoader(image_ds, batch_size=self.batch_size, shuffle=False)
       
         for i, batch in enumerate(image_dl):
-            print(f"Batch {i}: {batch}")
             restored = self.swinir_model(batch)
             # Crop the padded area back to the original size (H_orig, W_orig)
             output_cropped = restored[:, :, :h_orig, :w_orig]
@@ -163,10 +162,8 @@ class SwinIR(nn.Module):
                 output = (output_cropped.clamp_(0, 1) * 255.0).round().to(torch.uint8)
             else:
                 output = output_cropped.clamp_(0, 1)
-            #diff_normal = diff_normalize_data(output)
-            #print(f"Diff normalized 2: {diff_normal}")
-          # assume we have a single batch
-          return output
+            # assume we have a single batch
+            return output
 
 
 class SwinPhys(nn.Module):
@@ -201,20 +198,14 @@ class SwinPhys(nn.Module):
         if self.restore:
             frames = x.squeeze().float()   # CDHW
             frames = frames.permute(1, 0, 2, 3)   # DCHW
-            #print(f"DCHW: {frames.shape}")
             frames = self.swinir_model(frames)  # DCHW
             #print(f"After SwinIR DCHW: {frames.shape}")
-            #print(f"Restored: {frames[0]}")
             if self.diff_normalize:
                 frames = frames.permute(0, 2, 3, 1)   # DHWC
-                #print(f"After permute DHWC: {frames.shape}")
                 frames = diff_normalize_data(frames) # DHWC
-                #print(f"After diff_normalize DHWC: {frames.shape}")
                 # Transpose to get data in the form C, N, W, H
                 frames = frames.permute(3, 0, 1, 2)   # CDHW
-                #print(f"After permute CDHW: {frames.shape}")
             else:
                 frames = frames.permute(1, 0, 2, 3)  # CDHW
             restored_frames = frames.float().unsqueeze(0)  # NCDHW
-        print(f"Restored frames NCDHW: {restored_frames}")
         return self.physnet_model(restored_frames)
