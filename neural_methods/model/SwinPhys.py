@@ -188,5 +188,12 @@ class SwinPhys(nn.Module):
                 frames = frames.permute(3, 0, 1, 2)   # CDWH
             else:
                 frames = frames.permute(1, 0, 2, 3)  # CDWH
-            restored_frames = frames.float().unsqueeze(0)  # NCDWH
+            restored_frames = frames.float().unsqueeze(0).to(self.device)  # NCDWH
+        else:
+          if self.diff_normalize:
+            frames = frames.float() # CDWH
+            frames.permute(1, 2, 3, 0)  # DWHC
+            frames = diff_normalize_data(frames) # DWHC
+            frames = frames.permute(3, 0, 1, 2)   # CDWH
+            restored_frames = frames.float().unsqueeze(0).to(self.device)  # NCDWH
         return self.physnet_model(restored_frames)
