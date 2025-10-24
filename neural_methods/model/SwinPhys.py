@@ -17,7 +17,6 @@ from models.network_swinir import SwinIR as net
 from torch.utils.data import TensorDataset
 
 
-@staticmethod
 def load_swinir_model(model_path, window_size=7, img_size=126):
     """Loads the pretrained SwinIR model"""
     
@@ -36,7 +35,6 @@ def load_swinir_model(model_path, window_size=7, img_size=126):
     return model
 
 
-@staticmethod
 def load_physnet_model(model_path, num_frames):
     """Loads a pretrained PhysNet model"""
     if os.path.exists(model_path):
@@ -49,7 +47,6 @@ def load_physnet_model(model_path, num_frames):
     return model
 
 
-@staticmethod
 def diff_normalize_data(data):
     """Calculate discrete difference in video data along the time-axis and nornamize by its standard deviation."""
     n, h, w, c = data.shape
