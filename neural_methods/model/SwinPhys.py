@@ -191,7 +191,7 @@ class SwinPhys(nn.Module):
             restored_frames = frames.float().unsqueeze(0).to(self.device)  # NCDWH
         else:
           if self.diff_normalize:
-            frames = frames.float() # CDWH
+            frames = x.squeeze().float() # CDWH
             frames.permute(1, 2, 3, 0)  # DWHC
             frames = diff_normalize_data(frames) # DWHC
             frames = frames.permute(3, 0, 1, 2)   # CDWH
