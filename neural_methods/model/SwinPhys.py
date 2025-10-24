@@ -51,8 +51,8 @@ def diff_normalize_data(data):
     """Calculate discrete difference in video data along the time-axis and nornamize by its standard deviation."""
     n, h, w, c = data.shape
     diffnormalized_len = n - 1
-    diffnormalized_data = torch.zeros((diffnormalized_len, h, w, c), dtype=np.float32)
-    diffnormalized_data_padding = torch.zeros((1, h, w, c), dtype=np.float32)
+    diffnormalized_data = torch.zeros((diffnormalized_len, h, w, c), dtype=torch.float32)
+    diffnormalized_data_padding = torch.zeros((1, h, w, c), dtype=torch.float32)
     for j in range(diffnormalized_len):
         diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
                     data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
