@@ -17,6 +17,7 @@ from models.network_swinir import SwinIR as net
 from torch.utils.data import TensorDataset
 
 
+@staticmethod
 def load_swinir_model(model_path, window_size=7, img_size=126):
     """Loads the pretrained SwinIR model"""
     
@@ -35,6 +36,7 @@ def load_swinir_model(model_path, window_size=7, img_size=126):
     return model
 
 
+@staticmethod
 def load_physnet_model(model_path, num_frames):
     """Loads a pretrained PhysNet model"""
     if os.path.exists(model_path):
@@ -47,39 +49,20 @@ def load_physnet_model(model_path, num_frames):
     return model
 
 
-def diff_normalize_data(data: torch.Tensor) -> torch.Tensor:
-    """
-    Calculate discrete difference in video data along the time-axis and 
-    normalize by its standard deviation.
-    
-    Args:
-        data: A torch.Tensor of shape (N, H, W, C).
-        
-    Returns:
-        A torch.Tensor of shape (N, H, W, C) containing the 
-        difference-normalized data, with a padding slice at the end.
-    """
-    diff = data[1:, :, :, :] - data[:-1, :, :, :]
-    sum_term = data[1:, :, :, :] + data[:-1, :, :, :]  # (n-1, h, w, c)    
-    # The 'eps' (1e-7) prevents division by zero.
-    diffnormalized_data = diff / (sum_term + 1e-7)
-    std_dev = torch.std(diffnormalized_data)
-    if std_dev.item() > 1e-7:
-        diffnormalized_data = diffnormalized_data / std_dev  
-    diffnormalized_data[torch.isnan(diffnormalized_data)] = 0.0
-
-    # 6. Append the padding slice
-    h, w, c = data.shape[1:]
-    diffnormalized_data_padding = torch.zeros(
-        (1, h, w, c), 
-        dtype=data.dtype,
-        device=data.device
-    )
-    diffnormalized_data_padded = torch.cat(
-        (diffnormalized_data, diffnormalized_data_padding), 
-        dim=0
-    )
-    return diffnormalized_data_padded
+@staticmethod
+def diff_normalize_data(data):
+    """Calculate discrete difference in video data along the time-axis and nornamize by its standard deviation."""
+    n, h, w, c = data.shape
+    diffnormalized_len = n - 1
+    diffnormalized_data = torch.zeros((diffnormalized_len, h, w, c), dtype=np.float32)
+    diffnormalized_data_padding = torch.zeros((1, h, w, c), dtype=np.float32)
+    for j in range(diffnormalized_len):
+        diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
+                    data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
+    diffnormalized_data = diffnormalized_data / torch.std(diffnormalized_data)
+    diffnormalized_data = torch.cat(diffnormalized_data, diffnormalized_data_padding, axis=0)
+    diffnormalized_data[torch.isnan(diffnormalized_data)] = 0
+    return diffnormalized_data
 
 
 class ImageDataSet(Dataset):
@@ -193,21 +176,20 @@ class SwinPhys(nn.Module):
                 frames=num_frames).to(self.device)  # [3, T, 128,128]
 
     def forward(self, x):
-        [batch, channel, length, width, height] = x.shape   # NCDHW
+        [batch, channel, length, width, height] = x.shape   # NCDWH
         #print(f"Input shape: {x.shape}")
         restored_frames = x
         # Assume batch size of 1
         if self.restore:
-            frames = x.squeeze().float()   # CDHW
-            frames = frames.permute(1, 0, 2, 3)   # DCHW
-            frames = self.swinir_model(frames)  # DCHW
-            #print(f"After SwinIR DCHW: {frames.shape}")
+            frames = x.squeeze().float()   # CDWH
+            frames = frames.permute(1, 0, 2, 3)   # DCWH
+            frames = self.swinir_model(frames)  # DCWH
+            #print(f"After SwinIR DCWH: {frames.shape}")
             if self.diff_normalize:
-                frames = frames.permute(0, 2, 3, 1)   # DHWC
-                frames = diff_normalize_data(frames) # DHWC
-                # Transpose to get data in the form C, N, W, H
-                frames = frames.permute(3, 0, 1, 2)   # CDHW
+                frames = frames.permute(0, 2, 3, 1)   # DWHC
+                frames = diff_normalize_data(frames) # DWHC
+                frames = frames.permute(3, 0, 1, 2)   # CDWH
             else:
-                frames = frames.permute(1, 0, 2, 3)  # CDHW
-            restored_frames = frames.float().unsqueeze(0)  # NCDHW
+                frames = frames.permute(1, 0, 2, 3)  # CDWH
+            restored_frames = frames.float().unsqueeze(0)  # NCDWH
         return self.physnet_model(restored_frames)
