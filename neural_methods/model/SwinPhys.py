@@ -57,7 +57,7 @@ def diff_normalize_data(data):
         diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
                     data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
     diffnormalized_data = diffnormalized_data / torch.std(diffnormalized_data)
-    diffnormalized_data = torch.cat(diffnormalized_data, diffnormalized_data_padding, axis=0)
+    diffnormalized_data = torch.cat((diffnormalized_data, diffnormalized_data_padding), dim=0)
     diffnormalized_data[torch.isnan(diffnormalized_data)] = 0
     return diffnormalized_data
 
