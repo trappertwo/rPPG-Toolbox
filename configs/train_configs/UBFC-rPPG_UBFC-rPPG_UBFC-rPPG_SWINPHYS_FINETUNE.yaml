@@ -110,7 +110,7 @@ MODEL:
     SWINIR_MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
     FREEZE_SWINIR: False
     FREEZE_PHYSNET: False
-    SWINIR_DIFF_NORMALIZE: True
+    SWINPHYS_DIFF_NORMALIZE: True
 INFERENCE:
   BATCH_SIZE: 1
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
