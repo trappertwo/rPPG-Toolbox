@@ -18,7 +18,7 @@ TRAIN:
     BEGIN: 0.0
     END: 0.8
     PREPROCESS:
-      DATA_TYPE: ['DiffNormalized'] #if use physnet, should be DiffNormalized
+      DATA_TYPE: ['Raw'] #if use physnet, should be DiffNormalized, Raw if using SwinIR
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
@@ -32,11 +32,6 @@ TRAIN:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
-      RESTORE:
-        DO_RESTORE: False
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
-        IMG_SIZE: 126
       RESIZE:
         H: 72     # SwinIR pretrained model uses 126X126 frames
         W: 72
@@ -53,7 +48,7 @@ VALID:
     BEGIN: 0.8
     END: 1.0
     PREPROCESS:
-      DATA_TYPE: ['DiffNormalized'] #if use physnet, should be DiffNormalized
+      DATA_TYPE: ['Raw'] #if use physnet, should be DiffNormalized
       DATA_AUG: ['None']    # 'None' or 'Motion' is supported, used if the data path points to an augmented dataset or requires augmentation
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
@@ -67,11 +62,6 @@ VALID:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
-      RESTORE:
-        DO_RESTORE: False
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
-        IMG_SIZE: 126
       RESIZE:
         H: 72
         W: 72
@@ -90,7 +80,7 @@ TEST:
     BEGIN: 0.0
     END: 1.0
     PREPROCESS :
-      DATA_TYPE: ['DiffNormalized']         #if use physnet, should be DiffNormalized
+      DATA_TYPE: ['Raw']         #if use physnet, should be DiffNormalized
       LABEL_TYPE: DiffNormalized
       DO_CHUNK: True
       CHUNK_LENGTH: 128                 #only support for factor of 512
@@ -103,11 +93,6 @@ TEST:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
-      RESTORE:
-        DO_RESTORE: False
-        MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
-        DIFF_NORMALIZE_AFTER_RESTORATION: True
-        IMG_SIZE: 126
       RESIZE:
         H: 72
         W: 72
@@ -125,6 +110,7 @@ MODEL:
     SWINIR_MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"
     FREEZE_SWINIR: False
     FREEZE_PHYSNET: False
+    SWINIR_DIFF_NORMALIZE: True
 INFERENCE:
   BATCH_SIZE: 1
   EVALUATION_METHOD: "FFT"        # "FFT" or "peak detection"
