@@ -32,9 +32,6 @@ TRAIN:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
           USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used    
-      #RESTORE:
-        #DO_RESTORE: True
-        #MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth" 
       RESIZE:
         H: 126
         W: 126
@@ -64,10 +61,7 @@ VALID:
         DETECTION:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
-          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
-      #RESTORE:
-        #DO_RESTORE: True
-        #MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"        
+          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used    
       RESIZE:
         H: 126
         W: 126
@@ -98,10 +92,7 @@ TEST:
         DETECTION:
           DO_DYNAMIC_DETECTION: False
           DYNAMIC_DETECTION_FREQUENCY : 32
-          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used
-      #RESTORE:
-        #DO_RESTORE: True
-        #MODEL_PATH: "/content/drive/MyDrive/research_project/experiments/pretrained_models/006_colorCAR_DFWB_s126w7_SwinIR-M_jpeg40.pth"        
+          USE_MEDIAN_FACE_BOX: False    # This should be used ONLY if dynamic detection is used    
       RESIZE:
         H: 126
         W: 126
