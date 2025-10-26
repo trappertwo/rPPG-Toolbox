@@ -20,6 +20,7 @@ from torch.utils.data import TensorDataset
 def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_car'):
     """Loads the pretrained SwinIR model"""
     
+    print(f"Model type: {model_type}")
     # set up model
     if os.path.exists(model_path):
         print(f'loading model from {model_path}')
@@ -29,11 +30,11 @@ def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_
         model = net(upscale=1, in_chans=3, img_size=img_size, window_size=window_size,
                     img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
-    else if model_type == 'color_dn':
+    elif model_type == 'color_dn':
         model = net(upscale=1, in_chans=3, img_size=128, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
-    else if model_type == 'lightweight_sr':
+    elif model_type == 'lightweight_sr':
         model = net(upscale=1, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
