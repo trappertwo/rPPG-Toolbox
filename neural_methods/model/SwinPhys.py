@@ -30,11 +30,11 @@ def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_
                     img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
     else if model_type == 'color_dn':
-        model = net(upscale=1, in_chans=1, img_size=126, window_size=7,
-                    img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+        model = net(upscale=1, in_chans=3, img_size=128, window_size=8,
+                    img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
     else if model_type == 'lightweight_sr':
-        model = net(upscale=args.scale, in_chans=3, img_size=64, window_size=8,
+        model = net(upscale=1, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
     else:
@@ -168,6 +168,7 @@ class SwinPhys(nn.Module):
         self.img_size = img_size
         self.restore = restore
         self.diff_normalize = diff_normalize
+        self.model_type = model_type
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
         # Load pretrained physnet
@@ -193,14 +194,14 @@ class SwinPhys(nn.Module):
             frames = x.squeeze().float()   # CDWH
             frames = frames.permute(1, 0, 2, 3)   # DCWH
             frames = self.swinir_model(frames)  # DCWH
-            save_path = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/swin_output'
+            save_path = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/swin_output_{self.model_type}'
             np.save(save_path, np.array(frames.cpu()))
             #print(f"After SwinIR DCWH: {frames.shape}")
             if self.diff_normalize:
                 frames = frames.permute(0, 2, 3, 1)   # DWHC
                 frames = diff_normalize_data(frames) # DWHC
                 frames = frames.permute(3, 0, 1, 2)   # CDWH
-                save_path_2 = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/diff_normalized'
+                save_path_2 = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/diff_normalized_{self.model_type}'
                 np.save(save_path_2, np.array(frames.cpu()))
             else:
                 frames = frames.permute(1, 0, 2, 3)  # CDWH
