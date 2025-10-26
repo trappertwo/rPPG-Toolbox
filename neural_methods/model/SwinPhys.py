@@ -92,7 +92,7 @@ class ImageDataSet(Dataset):
 class SwinIR(nn.Module):
     def __init__(self, swinir_model_path, normalize=True, window_size=7, img_size=126, batch_size=128, freeze=True, model_type='jpeg_car'):
         super(SwinIR, self).__init__()
-        self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size, model_type)
+        self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size, model_type=model_type)
         self.window_size = window_size
         self.img_size = img_size
         self.batch_size = batch_size
