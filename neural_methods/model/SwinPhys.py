@@ -17,7 +17,7 @@ from models.network_swinir import SwinIR as net
 from torch.utils.data import TensorDataset
 
 
-def load_swinir_model(model_path, window_size=7, img_size=126):
+def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_car'):
     """Loads the pretrained SwinIR model"""
     
     # set up model
@@ -25,9 +25,20 @@ def load_swinir_model(model_path, window_size=7, img_size=126):
         print(f'loading model from {model_path}')
     else:
         raise ValueError(f'model {model_path} does not exist.')
-    model = net(upscale=1, in_chans=3, img_size=img_size, window_size=window_size,
-                img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
-                mlp_ratio=2, upsampler='', resi_connection='1conv')
+    if model_type == 'jpeg_car':
+        model = net(upscale=1, in_chans=3, img_size=img_size, window_size=window_size,
+                    img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='', resi_connection='1conv')
+    else if model_type == 'color_dn':
+        model = net(upscale=1, in_chans=1, img_size=126, window_size=7,
+                    img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='', resi_connection='1conv')
+    else if model_type == 'lightweight_sr':
+        model = net(upscale=args.scale, in_chans=3, img_size=64, window_size=8,
+                    img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
+    else:
+        print(f"Invalid model_type {model_type}")
     param_key_g = 'params'
     pretrained_model = torch.load(model_path)
     model.load_state_dict(pretrained_model[param_key_g] if param_key_g in pretrained_model.keys() else pretrained_model, strict=True)
@@ -78,9 +89,9 @@ class ImageDataSet(Dataset):
 
 
 class SwinIR(nn.Module):
-    def __init__(self, swinir_model_path, normalize=True, window_size=7, img_size=126, batch_size=128, freeze=True):
+    def __init__(self, swinir_model_path, normalize=True, window_size=7, img_size=126, batch_size=128, freeze=True, model_type='jpeg_car'):
         super(SwinIR, self).__init__()
-        self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size)
+        self.swinir_model = load_swinir_model(swinir_model_path, window_size=window_size, img_size=img_size, model_type)
         self.window_size = window_size
         self.img_size = img_size
         self.batch_size = batch_size
@@ -149,9 +160,10 @@ class SwinIR(nn.Module):
 class SwinPhys(nn.Module):
     """Hybrid model combining SwinIR and PhysNet models"""
     
-    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", diff_normalize=True, window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True):
+    def __init__(self, swinir_model_path, restore=True, physnet_model_path="", diff_normalize=True, window_size=7, img_size=126, num_frames=128, freeze_swinir=True, freeze_physnet=True,
+                model_type = 'jpeg_car'):
         super(SwinPhys, self).__init__()
-        self.swinir_model = SwinIR(swinir_model_path, normalize=diff_normalize, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir)
+        self.swinir_model = SwinIR(swinir_model_path, normalize=diff_normalize, window_size=window_size, img_size=img_size, batch_size=num_frames, freeze=freeze_swinir, model_type=model_type)
         self.window_size = window_size
         self.img_size = img_size
         self.restore = restore
