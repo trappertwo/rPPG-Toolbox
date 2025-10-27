@@ -35,7 +35,7 @@ def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_
                     img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
     elif model_type == 'lightweight_sr':
-        model = net(upscale=1, in_chans=3, img_size=64, window_size=8,
+        model = net(upscale=2, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
     else:
