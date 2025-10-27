@@ -64,10 +64,12 @@ def diff_normalize_data(data):
     n, h, w, c = data.shape
     diffnormalized_len = n - 1
     diffnormalized_data = torch.zeros((diffnormalized_len, h, w, c), dtype=torch.float32)
-    diffnormalized_data_padding = torch.zeros((1, h, w, c), dtype=torch.float32)
-    for j in range(diffnormalized_len):
-        diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
-                    data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    diffnormalized_data_padding = torch.zeros((1, h, w, c), dtype=torch.float32).to(device)
+    #for j in range(diffnormalized_len):
+    #    diffnormalized_data[j, :, :, :] = (data[j + 1, :, :, :] - data[j, :, :, :]) / (
+    #                data[j + 1, :, :, :] + data[j, :, :, :] + 1e-7)
+    diffnormalized_data = torch.diff(data.to(torch.float32).to(device), axis=0)
     diffnormalized_data = diffnormalized_data / torch.std(diffnormalized_data)
     diffnormalized_data = torch.cat((diffnormalized_data, diffnormalized_data_padding), dim=0)
     diffnormalized_data[torch.isnan(diffnormalized_data)] = 0
