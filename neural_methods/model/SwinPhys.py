@@ -101,20 +101,29 @@ class SwinIR(nn.Module):
         self.normalize = normalize
       
         # Freeze parameters of the model
-        for param in self.swinir_model.parameters():
-            param.requires_grad = False
-        # Unfreeze the last RSTB block and the final conv layers
-        if not freeze:
-            # Unfreeze the last RSTB block
-            #for layer in self.swinir_model.layers[-1:]:
-            #    for param in layer.parameters():
-            #        param.requires_grad = True
-            # Unfreeze the last two convolutional layers
-            for param in self.swinir_model.conv_after_body.parameters():
+        if freeze:
+          for param in self.swinir_model.parameters():
+              param.requires_grad = False
+          print("Freezing SwinIR")
+        else:
+          for param in self.swinir_model.parameters():
+              param.requires_grad = False
+          #for param in self.swinir_model.parameters():
+          #    param.requires_grad = True
+          # Unfreeze the last 1 RSTB blocks
+          for layer in self.swinir_model.layers[-1:]:
+            for param in layer.parameters():
                 param.requires_grad = True
-            for param in self.swinir_model.conv_last.parameters():
-                param.requires_grad = True
-            print("Unfreezing layers from SwinIR")
+          # Unfreeze the last two convolutional layers
+          for param in self.swinir_model.conv_after_body.parameters():
+            param.requires_grad = True
+          for param in self.swinir_model.upsample.parameters():
+            param.requires_grad = True
+            #for param in self.swinir_model.conv_last.parameters():
+            #    param.requires_grad = True
+          #print("Changing upsampling to scale=1")
+          self.swinir_model.upsample = UpsampleOneStep(scale=1, num_feat=60, num_out_ch=3)
+          print("Unfreezing layers from SwinIR")
                 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
