@@ -118,7 +118,7 @@ class SwinIR(nn.Module):
                 if 'upsample' in name:
                     param.requires_grad = True
                 else:
-                    param.requires_grad = True
+                    param.requires_grad = False
             print("Unfreezing last layers from SwinIR")
           #for param in self.swinir_model.parameters():
           #    param.requires_grad = True
