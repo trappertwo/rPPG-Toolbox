@@ -14,6 +14,7 @@ import numpy as np
 from neural_methods.model.PhysNet import PhysNet_padding_Encoder_Decoder_MAX
 from torch.utils.data import DataLoader, Dataset
 from models.network_swinir import SwinIR as net
+from models.network_swinir import UpsampleOneStep
 from torch.utils.data import TensorDataset
 
 
