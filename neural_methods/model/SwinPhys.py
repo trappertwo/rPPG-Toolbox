@@ -27,23 +27,30 @@ def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_
         print(f'loading model from {model_path}')
     else:
         raise ValueError(f'model {model_path} does not exist.')
+    param_key_g = 'params'
+    pretrained_state = torch.load(model_path)
     if model_type == 'jpeg_car':
         model = net(upscale=1, in_chans=3, img_size=img_size, window_size=window_size,
                     img_range=255., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
+        model.load_state_dict(pretrained_state[param_key_g] if param_key_g in pretrained_state.keys() else pretrained_state, strict=True)
     elif model_type == 'color_dn':
         model = net(upscale=1, in_chans=3, img_size=128, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6, 6, 6], embed_dim=180, num_heads=[6, 6, 6, 6, 6, 6],
                     mlp_ratio=2, upsampler='', resi_connection='1conv')
+        model.load_state_dict(pretrained_state[param_key_g] if param_key_g in pretrained_state.keys() else pretrained_state, strict=True)
     elif model_type == 'lightweight_sr':
-        model = net(upscale=2, in_chans=3, img_size=64, window_size=8,
+        model = net(upscale=1, in_chans=3, img_size=64, window_size=8,
                     img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
                     mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
+        # Create a new state dictionary that only includes compatible layers
+        new_state = model.state_dict()
+        # Only copy over the pretrained weights matching sizes
+        modified_pretrained_dict = {k: v for k, v in pretrained_state.items() if k in new_state and v.size() == new_state[k].size()}
+        # Update the new model's state dictionary
+        new_state.update(modified_pretrained_dict)
     else:
         print(f"Invalid model_type {model_type}")
-    param_key_g = 'params'
-    pretrained_model = torch.load(model_path)
-    model.load_state_dict(pretrained_model[param_key_g] if param_key_g in pretrained_model.keys() else pretrained_model, strict=True)
 
     return model
 
@@ -103,28 +110,30 @@ class SwinIR(nn.Module):
       
         # Freeze parameters of the model
         if freeze:
-          for param in self.swinir_model.parameters():
-              param.requires_grad = False
-          print("Freezing SwinIR")
+            for param in self.swinir_model.parameters():
+                param.requires_grad = False
+            print("Freezing SwinIR")
         else:
-          for param in self.swinir_model.parameters():
-              param.requires_grad = False
+            for name, param in self.swinir_model.named_parameters():
+                if 'upsample' in name:
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = True
+            print("Unfreezing last layers from SwinIR")
           #for param in self.swinir_model.parameters():
           #    param.requires_grad = True
           # Unfreeze the last 1 RSTB blocks
-          for layer in self.swinir_model.layers[-1:]:
-            for param in layer.parameters():
-                param.requires_grad = True
+          #for layer in self.swinir_model.layers[-1:]:
+          #  for param in layer.parameters():
+          #      param.requires_grad = True
           # Unfreeze the last two convolutional layers
-          for param in self.swinir_model.conv_after_body.parameters():
-            param.requires_grad = True
-          for param in self.swinir_model.upsample.parameters():
-            param.requires_grad = True
+          #for param in self.swinir_model.conv_after_body.parameters():
+          #  param.requires_grad = True
+          #for param in self.swinir_model.upsample.parameters():
+          #  param.requires_grad = True
             #for param in self.swinir_model.conv_last.parameters():
             #    param.requires_grad = True
           #print("Changing upsampling to scale=1")
-          self.swinir_model.upsample = UpsampleOneStep(scale=1, num_feat=60, num_out_ch=3)
-          print("Unfreezing layers from SwinIR")
                 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
