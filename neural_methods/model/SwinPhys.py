@@ -216,15 +216,15 @@ class SwinPhys(nn.Module):
             frames = x.squeeze().float()   # CDWH
             frames = frames.permute(1, 0, 2, 3)   # DCWH
             frames = self.swinir_model(frames)  # DCWH
-            save_path = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/swin_output_{self.model_type}'
-            np.save(save_path, np.array(frames.cpu()))
+            #save_path = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/swin_output_{self.model_type}'
+            #np.save(save_path, np.array(frames.cpu()))
             #print(f"After SwinIR DCWH: {frames.shape}")
             if self.diff_normalize:
                 frames = frames.permute(0, 2, 3, 1)   # DWHC
                 frames = diff_normalize_data(frames) # DWHC
                 frames = frames.permute(3, 0, 1, 2)   # CDWH
-                save_path_2 = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/diff_normalized_{self.model_type}'
-                np.save(save_path_2, np.array(frames.cpu()))
+                #save_path_2 = '/content/drive/MyDrive/research_project/data/UBFC-rPPG/test_data_preprocess/diff_normalized_{self.model_type}'
+                #np.save(save_path_2, np.array(frames.cpu()))
             else:
                 frames = frames.permute(1, 0, 2, 3)  # CDWH
             restored_frames = frames.float().unsqueeze(0).to(self.device)  # NCDWH
