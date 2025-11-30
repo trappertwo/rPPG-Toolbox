@@ -49,6 +49,12 @@ def load_swinir_model(model_path, window_size=7, img_size=126, model_type='jpeg_
         modified_pretrained_dict = {k: v for k, v in pretrained_state.items() if k in new_state and v.size() == new_state[k].size()}
         # Update the new model's state dictionary
         new_state.update(modified_pretrained_dict)
+        model.load_state_dict(new_state)
+    elif model_type == 'lightweight_sr_frozen':
+        model = net(upscale=2, in_chans=3, img_size=64, window_size=8,
+                    img_range=1., depths=[6, 6, 6, 6], embed_dim=60, num_heads=[6, 6, 6, 6],
+                    mlp_ratio=2, upsampler='pixelshuffledirect', resi_connection='1conv')
+        model.load_state_dict(pretrained_state[param_key_g] if param_key_g in pretrained_state.keys() else pretrained_state, strict=True)
     else:
         print(f"Invalid model_type {model_type}")
 
@@ -108,33 +114,32 @@ class SwinIR(nn.Module):
         self.batch_size = batch_size
         self.normalize = normalize
       
-        # Freeze parameters of the model
+        # Freeze/Unfreeze parameters of the model
         if freeze:
             for param in self.swinir_model.parameters():
                 param.requires_grad = False
             print("Freezing SwinIR")
-        else:
+        elif model_type == 'lightweight_sr':
             for name, param in self.swinir_model.named_parameters():
                 if 'upsample' in name:
                     param.requires_grad = True
                 else:
                     param.requires_grad = False
-            print("Unfreezing last layers from SwinIR")
-          #for param in self.swinir_model.parameters():
-          #    param.requires_grad = True
+            print("Changing upsampling to scale=1")
+            print("Unfreezing last layers from SwinIR for lightweight_sr")
+        else:
           # Unfreeze the last 1 RSTB blocks
-          #for layer in self.swinir_model.layers[-1:]:
-          #  for param in layer.parameters():
-          #      param.requires_grad = True
+          for layer in self.swinir_model.layers[-1:]:
+            for param in layer.parameters():
+                param.requires_grad = True
           # Unfreeze the last two convolutional layers
-          #for param in self.swinir_model.conv_after_body.parameters():
-          #  param.requires_grad = True
+          for param in self.swinir_model.conv_after_body.parameters():
+            param.requires_grad = True
           #for param in self.swinir_model.upsample.parameters():
           #  param.requires_grad = True
-            #for param in self.swinir_model.conv_last.parameters():
-            #    param.requires_grad = True
-          #print("Changing upsampling to scale=1")
-                
+          for param in self.swinir_model.conv_last.parameters():
+            param.requires_grad = True
+              
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.swinir_model.to(device)
 
